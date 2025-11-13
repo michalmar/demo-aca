@@ -161,6 +161,7 @@ set_github_secret() {
   local env_var=$2
   local value=${!env_var}
   echo "Setting secret $name"
+  echo "Secret $value"
   printf '%s' "$value" | gh secret set "$name" --repo "$REPO" --body - >/dev/null
 }
 
