@@ -13,6 +13,12 @@ param containerName string
 @description('Partition key path for the SQL container.')
 param partitionKeyPath string
 
+@description('Principal ID of the user executing the deployment')
+param userPrincipalId string
+
+@description('Principal ID of the backend Azure Container App managed identity.')
+param backendPrincipalId string
+
 @description('The default consistency level of the Cosmos DB account')
 @allowed([
   'Eventual'
@@ -96,6 +102,26 @@ resource container 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/container
 var keys = listKeys(account.id, '2021-04-15')
 var connectionString = 'AccountEndpoint=${account.properties.documentEndpoint};AccountKey=${keys.primaryMasterKey};'
 var dataContributorRoleId = '${account.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+
+resource userDataContributorRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(account.id, userPrincipalId, 'cosmos-data-contributor-user')
+  parent: account
+  properties: {
+    roleDefinitionId: dataContributorRoleId
+    principalId: userPrincipalId
+    scope: account.id
+  }
+}
+
+resource backendDataContributorRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
+  name: guid(account.id, backendPrincipalId, 'cosmos-data-contributor-backend')
+  parent: account
+  properties: {
+    roleDefinitionId: dataContributorRoleId
+    principalId: backendPrincipalId
+    scope: account.id
+  }
+}
 
 output accountId string = account.id
 output accountName string = account.name

@@ -1,0 +1,64 @@
+name: Deploy Backend Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+      - 'infra/**'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AZURE_CONTAINERAPPS_ENVIRONMENT: ${{ vars.AZURE_CONTAINERAPPS_ENVIRONMENT }}
+  AZURE_BACKEND_APP_NAME: ${{ vars.AZURE_BACKEND_APP_NAME }}
+  AZURE_CONTAINER_REGISTRY: ${{ vars.AZURE_CONTAINER_REGISTRY }}
+  BACKEND_IMAGE_NAME: ${{ vars.AZURE_BACKEND_IMAGE_NAME || 'backend-api' }}
+  BACKEND_TARGET_PORT: '8080'
+  MANAGED_IDENTITY_CLIENT_ID: ${{ vars.MANAGED_IDENTITY_CLIENT_ID || vars.BACKEND_IDENTITY_CLIENT_ID }}
+  COSMOS_ENDPOINT: ${{ vars.COSMOS_ENDPOINT }}
+  COSMOS_DATABASE_NAME: ${{ vars.COSMOS_DATABASE_NAME }}
+  COSMOS_CONTAINER_NAME: ${{ vars.COSMOS_CONTAINER_NAME }}
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login using federated identity
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and deploy Container App
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          appSourcePath: backend
+          containerAppName: ${{ env.AZURE_BACKEND_APP_NAME }}
+          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
+          containerAppEnvironment: ${{ env.AZURE_CONTAINERAPPS_ENVIRONMENT }}
+          acrName: ${{ env.AZURE_CONTAINER_REGISTRY }}
+          imageToBuild: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          targetPort: ${{ env.BACKEND_TARGET_PORT }}
+          ingress: external
+          runtimeStack: python:3.10
+          environmentVariables: >-
+            AZURE_CLIENT_ID=${{ env.MANAGED_IDENTITY_CLIENT_ID }}
+            COSMOS_ENDPOINT=${{ env.COSMOS_ENDPOINT }}
+            COSMOS_DATABASE_NAME=${{ env.COSMOS_DATABASE_NAME }}
+            COSMOS_CONTAINER_NAME=${{ env.COSMOS_CONTAINER_NAME }}

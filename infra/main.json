@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.35.1.17967",
-      "templateHash": "5436610063833746136"
+      "templateHash": "8059517107941446075"
     }
   },
   "parameters": {
@@ -222,6 +222,12 @@
       "metadata": {
         "description": "GitHub OIDC subjects granted access (e.g. repo:org/repo:ref)."
       }
+    },
+    "principalId": {
+      "type": "string",
+      "metadata": {
+        "description": "Id of the user or app to assign application roles"
+      }
     }
   },
   "resources": {
@@ -230,12 +236,6 @@
       "type": "Microsoft.ContainerRegistry/registries",
       "apiVersion": "2023-07-01",
       "name": "[parameters('acrName')]"
-    },
-    "cosmosAccountExisting": {
-      "existing": true,
-      "type": "Microsoft.DocumentDB/databaseAccounts",
-      "apiVersion": "2023-04-15",
-      "name": "[parameters('cosmosAccountName')]"
     },
     "backendIdentityExisting": {
       "existing": true,
@@ -248,19 +248,6 @@
       "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
       "apiVersion": "2023-01-31",
       "name": "[parameters('frontendIdentityName')]"
-    },
-    "cosmosRoleAssignment": {
-      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
-      "apiVersion": "2023-04-15",
-      "name": "[format('{0}/{1}', parameters('cosmosAccountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('backendIdentityName')), 'cosmos-data-contributor'))]",
-      "properties": {
-        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')))]",
-        "principalId": "[reference('backendIdentity').outputs.principalId.value]",
-        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName'))]"
-      },
-      "dependsOn": [
-        "backendIdentity"
-      ]
     },
     "backendAcrPull": {
       "type": "Microsoft.Authorization/roleAssignments",
@@ -330,7 +317,7 @@
       },
       "type": "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials",
       "apiVersion": "2023-01-31",
-      "name": "[format('{0}/{1}', parameters('githubIdentityName'), guid(subscription().subscriptionId, resourceGroup().name, parameters('githubIdentityName'), parameters('githubFederatedSubjects')[copyIndex()]))]",
+      "name": "[format('{0}/{1}', parameters('githubIdentityName'), guid(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('githubIdentityName')), parameters('githubFederatedSubjects')[copyIndex()]))]",
       "properties": {
         "issuer": "https://token.actions.githubusercontent.com",
         "subject": "[parameters('githubFederatedSubjects')[copyIndex()]]",
@@ -609,6 +596,12 @@
           },
           "partitionKeyPath": {
             "value": "[parameters('cosmosContainerPartitionKey')]"
+          },
+          "userPrincipalId": {
+            "value": "[parameters('principalId')]"
+          },
+          "backendPrincipalId": {
+            "value": "[reference('backendIdentity').outputs.principalId.value]"
           }
         },
         "template": {
@@ -618,7 +611,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.35.1.17967",
-              "templateHash": "8096984805017478962"
+              "templateHash": "17719171655481584071"
             }
           },
           "parameters": {
@@ -650,6 +643,18 @@
               "type": "string",
               "metadata": {
                 "description": "Partition key path for the SQL container."
+              }
+            },
+            "userPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the user executing the deployment"
+              }
+            },
+            "backendPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the backend Azure Container App managed identity."
               }
             },
             "defaultConsistencyLevel": {
@@ -747,6 +752,32 @@
               "dependsOn": [
                 "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('accountName'), parameters('databaseName'))]"
               ]
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+              "apiVersion": "2023-04-15",
+              "name": "[format('{0}/{1}', parameters('accountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName')), parameters('userPrincipalId'), 'cosmos-data-contributor-user'))]",
+              "properties": {
+                "roleDefinitionId": "[variables('dataContributorRoleId')]",
+                "principalId": "[parameters('userPrincipalId')]",
+                "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+              "apiVersion": "2023-04-15",
+              "name": "[format('{0}/{1}', parameters('accountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName')), parameters('backendPrincipalId'), 'cosmos-data-contributor-backend'))]",
+              "properties": {
+                "roleDefinitionId": "[variables('dataContributorRoleId')]",
+                "principalId": "[parameters('backendPrincipalId')]",
+                "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('accountName'))]"
+              ]
             }
           ],
           "outputs": {
@@ -784,7 +815,10 @@
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "backendIdentity"
+      ]
     },
     "backendIdentity": {
       "type": "Microsoft.Resources/deployments",
@@ -1345,7 +1379,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.35.1.17967",
-              "templateHash": "12097981064969202207"
+              "templateHash": "13922994775498909687"
             }
           },
           "parameters": {
@@ -1413,13 +1447,6 @@
                 "description": "Backend URL exposed as VITE_BACKEND_URL environment variable."
               }
             },
-            "additionalEnvironmentVariables": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Additional environment variables to merge with the default set."
-              }
-            },
             "identityId": {
               "type": "string",
               "metadata": {
@@ -1439,15 +1466,6 @@
                 "description": "Tags to apply to the container app."
               }
             }
-          },
-          "variables": {
-            "baseEnvironmentVariables": [
-              {
-                "name": "VITE_BACKEND_URL",
-                "value": "[parameters('backendUrl')]"
-              }
-            ],
-            "mergedEnvironmentVariables": "[concat(variables('baseEnvironmentVariables'), parameters('additionalEnvironmentVariables'))]"
           },
           "resources": [
             {
@@ -1486,7 +1504,12 @@
                         "cpu": "[json(parameters('cpu'))]",
                         "memory": "[parameters('memory')]"
                       },
-                      "env": "[variables('mergedEnvironmentVariables')]"
+                      "env": [
+                        {
+                          "name": "VITE_BACKEND_URL",
+                          "value": "[parameters('backendUrl')]"
+                        }
+                      ]
                     }
                   ],
                   "scale": {
@@ -1527,11 +1550,11 @@
       "value": "[listOutputsWithSecureValues(resourceId('Microsoft.Resources/deployments', 'cosmos-db'), '2022-09-01').endpoint]"
     },
     "cosmosPrimaryKey": {
-      "type": "securestring",
+      "type": "string",
       "value": "[listOutputsWithSecureValues(resourceId('Microsoft.Resources/deployments', 'cosmos-db'), '2022-09-01').primaryKey]"
     },
     "cosmosPrimaryConnectionString": {
-      "type": "securestring",
+      "type": "string",
       "value": "[listOutputsWithSecureValues(resourceId('Microsoft.Resources/deployments', 'cosmos-db'), '2022-09-01').connectionString]"
     },
     "backendFqdn": {
@@ -1557,6 +1580,26 @@
     "githubManagedIdentityClientId": {
       "type": "string",
       "value": "[reference('githubIdentity').outputs.clientId.value]"
+    },
+    "containerAppsEnvironmentName": {
+      "type": "string",
+      "value": "[parameters('containerAppsEnvironmentName')]"
+    },
+    "backendAppName": {
+      "type": "string",
+      "value": "[parameters('backendAppName')]"
+    },
+    "acrName": {
+      "type": "string",
+      "value": "[parameters('acrName')]"
+    },
+    "cosmosDatabaseName": {
+      "type": "string",
+      "value": "[listOutputsWithSecureValues(resourceId('Microsoft.Resources/deployments', 'cosmos-db'), '2022-09-01').databaseName]"
+    },
+    "cosmosContainerName": {
+      "type": "string",
+      "value": "[listOutputsWithSecureValues(resourceId('Microsoft.Resources/deployments', 'cosmos-db'), '2022-09-01').containerName]"
     }
   }
 }

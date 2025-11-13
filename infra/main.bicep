@@ -93,6 +93,9 @@ param githubIdentityName string = 'github-federation-mi'
 @description('GitHub OIDC subjects granted access (e.g. repo:org/repo:ref).')
 param githubFederatedSubjects array = []
 
+@description('Id of the user or app to assign application roles')
+param principalId string
+
 module containerAppEnvironment 'modules/container-app-environment.bicep' = {
   name: 'container-app-environment'
   params: {
@@ -123,6 +126,8 @@ module cosmos 'modules/cosmos.bicep' = {
     databaseName: cosmosDatabaseName
     containerName: cosmosContainerName
     partitionKeyPath: cosmosContainerPartitionKey 
+    userPrincipalId: principalId
+    backendPrincipalId: backendIdentity.outputs.principalId
   }
 }
 
@@ -200,26 +205,12 @@ resource containerRegistryExisting 'Microsoft.ContainerRegistry/registries@2023-
   name: acrName
 }
 
-resource cosmosAccountExisting 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' existing = {
-  name: cosmosAccountName
-}
-
 resource backendIdentityExisting 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: backendIdentityName
 }
 
 resource frontendIdentityExisting 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: frontendIdentityName
-}
-
-resource cosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
-  name: guid(cosmosAccountExisting.id, backendIdentityExisting.id, 'cosmos-data-contributor')
-  parent: cosmosAccountExisting
-  properties: {
-    roleDefinitionId: '${cosmosAccountExisting.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
-    principalId: backendIdentity.outputs.principalId
-    scope: cosmosAccountExisting.id
-  }
 }
 
 resource backendAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -267,7 +258,7 @@ resource githubIdentityExisting 'Microsoft.ManagedIdentity/userAssignedIdentitie
 }
 
 resource githubFederatedCredentials 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = [for subject in githubFederatedSubjects: {
-  name: guid(subscription().subscriptionId, resourceGroup().name, githubIdentityName, subject)
+  name: guid(githubIdentityExisting.id, subject)
   parent: githubIdentityExisting
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
@@ -279,9 +270,7 @@ resource githubFederatedCredentials 'Microsoft.ManagedIdentity/userAssignedIdent
 }]
 
 output cosmosEndpoint string = cosmos.outputs.endpoint
-@secure()
 output cosmosPrimaryKey string = cosmos.outputs.primaryKey
-@secure()
 output cosmosPrimaryConnectionString string = cosmos.outputs.connectionString
 output backendFqdn string = backendApp.outputs.fqdn
 output frontendFqdn string = frontendApp.outputs.fqdn
@@ -289,3 +278,8 @@ output acrLoginServer string = containerRegistry.outputs.loginServer
 output backendIdentityClientId string = backendIdentity.outputs.clientId
 output frontendIdentityClientId string = frontendIdentity.outputs.clientId
 output githubManagedIdentityClientId string = githubIdentity.outputs.clientId
+output containerAppsEnvironmentName string = containerAppsEnvironmentName
+output backendAppName string = backendAppName
+output acrName string = acrName
+output cosmosDatabaseName string = cosmos.outputs.databaseName
+output cosmosContainerName string = cosmos.outputs.containerName

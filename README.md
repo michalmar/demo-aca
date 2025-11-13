@@ -71,6 +71,12 @@ If Cosmos vars absent or init fails, backend silently falls back to in-memory st
 - Set `VITE_API_BASE_URL` to deployed backend URL.
 - Consider adding authentication (e.g., Azure AD / simple JWT) before storing PII.
 
+## GitHub Actions Configuration
+- Make the helper executable with `chmod +x scripts/configure-github.sh`.
+- Populate repository variables and secrets for the deployment workflow with `scripts/configure-github.sh [.azure/<env-name>/.env]`. The script reads the azd environment file (defaults to `.azure/$AZURE_ENV_NAME/.env`) and pushes values such as `AZURE_CLIENT_ID`, `AZURE_RESOURCE_GROUP`, and `COSMOS_CONNECTION_STRING` via the GitHub CLI.
+- Ensure you are authenticated with `gh auth login` before running the script. Refresh the azd environment (`azd provision` or `azd env refresh`) so the `.env` file contains up-to-date outputs prior to execution.
+- Adjust `infra/main.parameters.json` if you customize resource names; re-run the script afterwards to refresh GitHub configuration.
+
 ## Folder Structure
 ```
 src/
