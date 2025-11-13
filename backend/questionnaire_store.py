@@ -1,6 +1,16 @@
-from .cosmos import read_questionnaire, upsert_questionnaire, questionnaire_available
-from .data import QUESTIONNAIRE
-from .models import Questionnaire
+from pathlib import Path
+
+try:
+    from backend.cosmos import read_questionnaire, upsert_questionnaire, questionnaire_available
+    from backend.data import QUESTIONNAIRE
+    from backend.models import Questionnaire
+except ImportError:  # Allow execution when package context is unavailable
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    from cosmos import read_questionnaire, upsert_questionnaire, questionnaire_available
+    from data import QUESTIONNAIRE
+    from models import Questionnaire
 
 def seed_if_empty():
     if not questionnaire_available():

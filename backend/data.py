@@ -1,4 +1,12 @@
-from .models import Questionnaire, Question
+from pathlib import Path
+
+try:
+    from backend.models import Questionnaire, Question
+except ImportError:  # Allow running without package context
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    from models import Questionnaire, Question
 
 QUESTIONNAIRE = Questionnaire(
     title="Getting to Know You",

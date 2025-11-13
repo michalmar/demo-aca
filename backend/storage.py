@@ -1,6 +1,15 @@
+from pathlib import Path
 from typing import Dict
-from .models import StoredAnswers
-from . import cosmos
+
+try:
+    from backend.models import StoredAnswers
+    from backend import cosmos
+except ImportError:  # Allow fallback execution without package context
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    from models import StoredAnswers
+    import cosmos
 
 # In-memory fallback store
 _answers_store: Dict[str, StoredAnswers] = {}

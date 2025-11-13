@@ -1,8 +1,19 @@
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .models import Questionnaire, AnswersPayload, StoredAnswers
-from .questionnaire_store import get_questionnaire, seed_if_empty
-from .storage import save_answers, get_answers, init_storage
+
+try:  # Prefer package imports when available
+    from backend.models import Questionnaire, AnswersPayload, StoredAnswers
+    from backend.questionnaire_store import get_questionnaire, seed_if_empty
+    from backend.storage import save_answers, get_answers, init_storage
+except ImportError:  # Fallback when executed as a standalone module
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    from models import Questionnaire, AnswersPayload, StoredAnswers
+    from questionnaire_store import get_questionnaire, seed_if_empty
+    from storage import save_answers, get_answers, init_storage
 
 app = FastAPI(title="Student Questionnaire API", version="0.1.0")
 
