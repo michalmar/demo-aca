@@ -19,6 +19,11 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Production stage
 FROM python:3.11-slim
 
+# Install runtime utilities needed by health checks
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash --uid 1000 msuser
 
@@ -49,5 +54,5 @@ ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Run the application
-CMD ["python", "main.py"]
+# Run the application with uvicorn so the API server stays alive
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

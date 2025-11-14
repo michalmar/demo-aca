@@ -9,3 +9,11 @@ uvicorn main:app --reload --port 8020
 ```bash
 npm run dev
 ```
+
+
+**To run with Docker**:
+```bash
+cd backend
+docker build -t demo-aca-backend .
+docker run --rm -it -p 8080:8080 demo-aca-backend
+```
