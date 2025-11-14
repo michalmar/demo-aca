@@ -1,31 +1,35 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-try:  # Prefer package imports when available
-    from backend.models import Questionnaire, AnswersPayload, StoredAnswers
-    from backend.questionnaire_store import get_questionnaire, seed_if_empty
-    from backend.storage import save_answers, get_answers, init_storage
-except ImportError:  # Fallback when executed as a standalone module
-    import sys
+from dotenv import load_dotenv
+load_dotenv()
 
-    sys.path.append(str(Path(__file__).resolve().parent))
-    from models import Questionnaire, AnswersPayload, StoredAnswers
-    from questionnaire_store import get_questionnaire, seed_if_empty
-    from storage import save_answers, get_answers, init_storage
+import os
+import sys
 
-app = FastAPI(title="Student Questionnaire API", version="0.1.0")
+sys.path.append(str(Path(__file__).resolve().parent))
+from models import Questionnaire, AnswersPayload, StoredAnswers
+from questionnaire_store import get_questionnaire, seed_if_empty
+from storage import save_answers, get_answers, init_storage
 
-@app.on_event("startup")
-def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     init_storage()
     seed_if_empty()
+    yield
+
+
+app = FastAPI(title="Student Questionnaire API", version="0.1.0", lifespan=lifespan)
+
+FE_FQDN = os.getenv("frontendFqdn")
 
 # CORS for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", FE_FQDN],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
