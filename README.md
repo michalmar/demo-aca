@@ -65,15 +65,38 @@ If Cosmos vars absent or init fails, backend silently falls back to in-memory st
 ### Questionnaire Source
 `/api/questionnaire` now serves the document stored in Cosmos (container `questionnaire`) when available; otherwise it falls back to the static definition. Update the content by editing `backend/data.py` and restarting (first run seeds); or PATCH the Cosmos item with id `questionnaire`.
 
-### Deploying to Azure (Future Outline)
-- Provision Azure Cosmos DB (Core SQL API) and copy endpoint/key to env.
-- Deploy FastAPI (Azure Container Apps / App Service) with environment variables.
-- Set `VITE_API_BASE_URL` to deployed backend URL.
-- Consider adding authentication (e.g., Azure AD / simple JWT) before storing PII.
+### Deploying to Azure
+Both backend and frontend are deployed to Azure Container Apps using GitHub Actions workflows:
+
+#### Backend Deployment
+- Workflow: `.github/workflows/deploy-backend.yml`
+- Triggers on changes to `backend/**` or workflow file
+- Builds Docker image from `backend/Dockerfile`
+- Deploys to Azure Container Apps with FastAPI (Python 3.11)
+- Environment variables: `AZURE_CLIENT_ID`, `COSMOS_ENDPOINT`, `COSMOS_DATABASE_NAME`, `COSMOS_CONTAINER_NAME`, `FRONTEND_FQDN`
+
+#### Frontend Deployment
+- Workflow: `.github/workflows/deploy-frontend.yml`
+- Triggers on changes to frontend files (`src/**`, `package.json`, etc.) or workflow file
+- Builds Docker image from root `Dockerfile` (multi-stage: Node 20 alpine + nginx)
+- Deploys to Azure Container Apps serving static React SPA
+- Environment variables: `VITE_API_BASE_URL` (set to backend FQDN)
+
+#### Required Azure Resources
+- Provision Azure Cosmos DB (Core SQL API) and copy endpoint/key to env
+- Azure Container Apps Environment
+- Azure Container Registry
+- Managed Identity for accessing Cosmos DB
+- Consider adding authentication (e.g., Azure AD / simple JWT) before storing PII
 
 ## GitHub Actions Configuration
 - Make the helper executable with `chmod +x scripts/configure-github.sh`.
-- Populate repository variables and secrets for the deployment workflow with `scripts/configure-github.sh [.azure/<env-name>/.env]`. The script reads the azd environment file (defaults to `.azure/$AZURE_ENV_NAME/.env`) and pushes values such as `AZURE_CLIENT_ID`, `AZURE_RESOURCE_GROUP`, and `COSMOS_CONNECTION_STRING` via the GitHub CLI.
+- Populate repository variables and secrets for the deployment workflows with `scripts/configure-github.sh [.azure/<env-name>/.env]`. The script reads the azd environment file (defaults to `.azure/$AZURE_ENV_NAME/.env`) and pushes values such as:
+  - Secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
+  - Variables: `AZURE_RESOURCE_GROUP`, `AZURE_CONTAINERAPPS_ENVIRONMENT`, `AZURE_CONTAINER_REGISTRY`
+  - Variables: `AZURE_BACKEND_APP_NAME`, `AZURE_FRONTEND_APP_NAME`
+  - Variables: `COSMOS_ENDPOINT`, `COSMOS_DATABASE_NAME`, `COSMOS_CONTAINER_NAME`
+  - Variables: `MANAGED_IDENTITY_CLIENT_ID`, `BACKEND_FQDN`, `FRONTEND_FQDN`
 - Ensure you are authenticated with `gh auth login` before running the script. Refresh the azd environment (`azd provision` or `azd env refresh`) so the `.env` file contains up-to-date outputs prior to execution.
 - Adjust `infra/main.parameters.json` if you customize resource names; re-run the script afterwards to refresh GitHub configuration.
 
@@ -86,6 +109,15 @@ src/
   data/*               # Questionnaire definition
   services/*           # Mock persistence layer
   layout/*             # Page layout
+backend/
+  Dockerfile           # Backend Python API container
+  main.py              # FastAPI application
+  requirements.txt     # Python dependencies
+Dockerfile             # Frontend React SPA container (root)
+nginx.conf             # Nginx configuration for frontend
+.github/workflows/
+  deploy-backend.yml   # Backend deployment workflow
+  deploy-frontend.yml  # Frontend deployment workflow
 ```
 
 ## Customization Ideas
