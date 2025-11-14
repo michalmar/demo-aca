@@ -1,4 +1,11 @@
-source .venv/bin/activate
-uvicorn backend.main:app --reload --port 8020
 
+**backend**:
+```bash
+source .venv/bin/activate
+cd backend
+uvicorn main:app --reload --port 8020
+```
+**frontend**:
+```bash
 npm run dev
+```
