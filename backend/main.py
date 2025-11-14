@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Student Questionnaire API", version="0.1.0", lifespan=lifespan)
 
-FE_FQDN = os.getenv("frontendFqdn")
+FE_FQDN = os.getenv("FRONTEND_FQDN")
 
 # CORS for local development
 app.add_middleware(
