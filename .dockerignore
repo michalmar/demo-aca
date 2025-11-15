@@ -1,0 +1,12 @@
+# Exclude backend and other non-frontend resources from Docker build context
+backend/
+infra/
+infra_template/
+node_modules/
+.venv/
+.git/
+.gitignore
+scripts/
+coverage/
+dist/
+*.log
