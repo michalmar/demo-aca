@@ -32,10 +32,12 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     let mounted = true;
     (async () => {
+      console.debug('[QuestionnaireProvider] attempting to load questionnaire');
       try {
         // attempt remote questionnaire
         const remote = await fetchQuestionnaire();
         if (mounted && remote) {
+          console.debug('[QuestionnaireProvider] remote questionnaire received', remote);
           if (remote.questions) setQuestions(remote.questions);
           if (remote.title) setTitle(remote.title);
           if (remote.description) setDescription(remote.description);
@@ -46,8 +48,10 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
         //   setAnswers(stored);
         // }
       } catch (e) {
+        console.error('[QuestionnaireProvider] failed to load questionnaire', e);
         if (mounted) setError('Failed to load questionnaire');
       } finally {
+        console.debug('[QuestionnaireProvider] questionnaire load complete');
         if (mounted) setLoading(false);
       }
     })();
