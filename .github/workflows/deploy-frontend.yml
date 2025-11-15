@@ -24,10 +24,10 @@ concurrency:
 env:
   AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
   AZURE_CONTAINERAPPS_ENVIRONMENT: ${{ vars.AZURE_CONTAINERAPPS_ENVIRONMENT }}
-  AZURE_FRONTEND_APP_NAME: ${{ vars.AZURE_FRONTEND_APP_NAME }}
+  AZURE_FRONTEND_APP_NAME: ${{ vars.AZURE_FRONTEND_APP_NAME || 'demo-aca-frontend' }}
   AZURE_CONTAINER_REGISTRY: ${{ vars.AZURE_CONTAINER_REGISTRY }}
   FRONTEND_IMAGE_NAME: ${{ vars.AZURE_FRONTEND_IMAGE_NAME || 'frontend-app' }}
-  FRONTEND_TARGET_PORT: '8080'
+  FRONTEND_TARGET_PORT: '3000'
   BACKEND_FQDN: ${{ vars.BACKEND_FQDN }}
 
 jobs:
@@ -62,5 +62,5 @@ jobs:
           ingress: external
           runtimeStack: node:20-alpine
           environmentVariables: >-
-            VITE_API_BASE_URL=${{ env.BACKEND_FQDN }}
+            VITE_BACKEND_URL=${{ env.BACKEND_FQDN }}
 
