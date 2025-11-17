@@ -1,8 +1,9 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 from azure.cosmos import CosmosClient, PartitionKey, exceptions
+from azure.identity import ManagedIdentityCredential
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,11 @@ COSMOS_QUESTIONNAIRE_CONTAINER = _get_setting(
     default="questionnaire",
 )
 
+_MANAGED_IDENTITY_CLIENT_ID = _get_setting(
+    "AZURE_CLIENT_ID",
+    "MANAGED_IDENTITY_CLIENT_ID",
+)
+
 _ANSWERS_PARTITION_KEY = _get_setting(
     "COSMOS_ANSWERS_PARTITION_KEY",
     default="/userId",
@@ -52,24 +58,62 @@ def _should_skip_ssl_verification() -> bool:
     return _get_setting("COSMOS_EMULATOR_DISABLE_SSL_VERIFY") in {"1", "true", "True"}
 
 
+def _managed_identity_available() -> bool:
+    if COSMOS_KEY:
+        return False
+    identity_markers = (
+        "AZURE_CLIENT_ID",
+        "MANAGED_IDENTITY_CLIENT_ID",
+        "IDENTITY_ENDPOINT",
+        "MSI_ENDPOINT",
+    )
+    return any(os.getenv(marker) for marker in identity_markers)
+
+
+def _build_managed_identity_credential() -> Optional[ManagedIdentityCredential]:
+    try:
+        if _MANAGED_IDENTITY_CLIENT_ID:
+            return ManagedIdentityCredential(client_id=_MANAGED_IDENTITY_CLIENT_ID)
+        return ManagedIdentityCredential()
+    except Exception:  # pragma: no cover - defensive logging
+        logger.exception("Failed to initialize managed identity credential")
+        return None
+
+
+def _resolve_credential() -> Tuple[Optional[object], str]:
+    if COSMOS_KEY:
+        return COSMOS_KEY, "key"
+    if _managed_identity_available():
+        credential = _build_managed_identity_credential()
+        if credential:
+            return credential, "managed identity"
+    return None, "none"
+
+
 def init_cosmos() -> bool:
     """Initialize Cosmos DB resources if configuration is available."""
 
     global _client, _answers_container, _questionnaire_container
 
     logger.info(
-        "Cosmos configuration resolved: endpoint=%s key=%s database=%s answers_container=%s questionnaire_container=%s",
+        "Cosmos configuration resolved: endpoint=%s key=%s managed_identity_client_id=%s database=%s answers_container=%s questionnaire_container=%s",
         "set" if COSMOS_ENDPOINT else "unset",
         "set" if COSMOS_KEY else "unset",
+        "set" if _MANAGED_IDENTITY_CLIENT_ID else "unset",
         COSMOS_DATABASE_NAME,
         COSMOS_ANSWERS_CONTAINER,
         COSMOS_QUESTIONNAIRE_CONTAINER,
     )
 
-    if not COSMOS_ENDPOINT or not COSMOS_KEY:
-        logger.warning(
-            "Skipping Cosmos initialization because endpoint or key is missing. Using in-memory fallback.")
+    if not COSMOS_ENDPOINT:
+        logger.warning("Skipping Cosmos initialization because endpoint is missing. Using in-memory fallback.")
         return False  # not configured; use in-memory fallback
+
+    credential, auth_mode = _resolve_credential()
+    if not credential:
+        logger.warning(
+            "Skipping Cosmos initialization because no valid credential was resolved. Using in-memory fallback.")
+        return False
 
     try:
         client_kwargs = {}
@@ -77,8 +121,8 @@ def init_cosmos() -> bool:
             client_kwargs["connection_verify"] = False
             logger.info("COSMOS_EMULATOR_DISABLE_SSL_VERIFY is set; disabling SSL verification for client.")
 
-        logger.info("Creating Cosmos client and ensuring database/containers exist...")
-        _client = CosmosClient(COSMOS_ENDPOINT, COSMOS_KEY, **client_kwargs)
+        logger.info("Creating Cosmos client with %s authentication and ensuring database/containers exist...", auth_mode)
+        _client = CosmosClient(COSMOS_ENDPOINT, credential=credential, **client_kwargs)
         database = _client.create_database_if_not_exists(COSMOS_DATABASE_NAME)
 
         _answers_container = database.create_container_if_not_exists(
@@ -92,7 +136,7 @@ def init_cosmos() -> bool:
         )
         logger.info("Cosmos containers ready: answers=%s questionnaire=%s", COSMOS_ANSWERS_CONTAINER, COSMOS_QUESTIONNAIRE_CONTAINER)
         return True
-    except Exception as exc:  # pragma: no cover - defensive logging
+    except Exception:  # pragma: no cover - defensive logging
         logger.exception("Cosmos initialization failed; falling back to in-memory store")
         _client = None
         _answers_container = None
