@@ -1,15 +1,17 @@
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/Card';
+import { cn } from '@/lib/utils';
 import { Question } from '../data/questionnaire';
 
 interface Props { question: Question; answered: boolean; }
 
 const QuestionBubble: React.FC<Props> = ({ question, answered }) => {
   return (
-    <div className={answered ? 'opacity-70' : ''}>
-      <div className="max-w-xl rounded-2xl bg-surface px-4 py-3 mb-3 border border-surface/70">
+    <Card className={cn('mb-3 max-w-xl border-muted bg-card text-card-foreground transition-opacity', answered && 'opacity-70')}>
+      <CardContent className="px-4 py-3">
         <p className="text-sm leading-relaxed">{question.text}</p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
