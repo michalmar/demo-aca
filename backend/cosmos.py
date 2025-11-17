@@ -57,8 +57,6 @@ def init_cosmos() -> bool:
 
     global _client, _answers_container, _questionnaire_container
 
-    logger.warning(f"COSMOS ENDPOINT: {COSMOS_ENDPOINT}")
-
     logger.info(
         "Cosmos configuration resolved: endpoint=%s key=%s database=%s answers_container=%s questionnaire_container=%s",
         "set" if COSMOS_ENDPOINT else "unset",
