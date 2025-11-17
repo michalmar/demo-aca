@@ -22,6 +22,10 @@ const AnswerInput: React.FC = () => {
   const q = questions[currentIndex];
   const [clearing, setClearing] = React.useState(false);
 
+  const answerRecord = q ? answers[q.id] : undefined;
+  const answerValue = answerRecord?.value ?? '';
+  const hasAnswer = answerValue.trim().length > 0;
+
   const onChange = (val: string) => {
     if (!q) return;
     setAnswer(q.id, val);
@@ -36,6 +40,8 @@ const AnswerInput: React.FC = () => {
       setClearing(false);
     }
   };
+
+  const sliderValue = answerValue !== '' ? answerValue : '0';
 
   return (
     <div className="sticky bottom-0 bg-background/90 backdrop-blur border-t border-border/60 pt-4">
@@ -56,7 +62,7 @@ const AnswerInput: React.FC = () => {
               {q.type === 'text' && (
                 <Textarea
                   placeholder="Type your answer..."
-                  value={answers[q.id] || ''}
+                  value={answerValue}
                   onChange={e => onChange(e.target.value)}
                 />
               )}
@@ -65,7 +71,7 @@ const AnswerInput: React.FC = () => {
                   {q.options!.map(opt => (
                     <Button
                       key={opt}
-                      variant={answers[q.id] === opt ? 'default' : 'outline'}
+                      variant={answerValue === opt ? 'default' : 'outline'}
                       onClick={() => onChange(opt)}
                     >
                       {opt}
@@ -79,12 +85,12 @@ const AnswerInput: React.FC = () => {
                     type="range"
                     min={0}
                     max={q.scaleMax}
-                    value={answers[q.id] || '0'}
+                    value={sliderValue}
                     onChange={e => onChange(e.target.value)}
                     className="flex-1"
                   />
                   <div className="text-sm font-medium w-16 text-center">
-                    {answers[q.id] || '0'} / {q.scaleMax}
+                    {sliderValue} / {q.scaleMax}
                   </div>
                 </div>
               )}
@@ -97,7 +103,7 @@ const AnswerInput: React.FC = () => {
                 {clearing ? 'Clearing...' : 'Clear'}
               </Button>
               {currentIndex < questions.length - 1 && (
-                <Button onClick={next} disabled={!answers[q.id] || clearing}>
+                <Button onClick={next} disabled={!hasAnswer || clearing}>
                   Next
                 </Button>
               )}

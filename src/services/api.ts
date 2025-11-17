@@ -10,6 +10,7 @@ export interface QuestionnaireResponse {
     type: 'text' | 'multichoice' | 'scale';
     options?: string[];
     scaleMax?: number;
+    rightAnswer?: string | string[] | null;
   }>;
 }
 
@@ -24,6 +25,49 @@ const USER_ID_KEY = 'student-questionnaire-user-id';
 
 function answersKey(questionnaireId: string) {
   return `${KEY_PREFIX}:${questionnaireId}`;
+}
+
+function normalizeRightAnswer(input: unknown): string | string[] | undefined {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (Array.isArray(input)) {
+    const normalized = input.filter((item): item is string => typeof item === 'string');
+    return normalized;
+  }
+  return undefined;
+}
+
+function normalizeAnswerMap(raw: unknown): AnswerMap {
+  if (!raw || typeof raw !== 'object') {
+    return {};
+  }
+
+  const entries = Object.entries(raw as Record<string, unknown>);
+  const output: AnswerMap = {};
+
+  for (const [key, value] of entries) {
+    if (typeof value === 'string') {
+      output[key] = { value };
+      continue;
+    }
+
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const obj = value as Record<string, unknown>;
+      const storedValue = obj.value;
+      const recordValue = typeof storedValue === 'string' ? storedValue : '';
+      const correct = obj.correct === 'yes' || obj.correct === 'no' ? obj.correct : undefined;
+      const rightAnswer = normalizeRightAnswer(obj.rightAnswer);
+
+      output[key] = {
+        value: recordValue,
+        correct,
+        rightAnswer,
+      };
+    }
+  }
+
+  return output;
 }
 
 export function clearPersistedAnswers(questionnaireId: string) {
@@ -53,7 +97,8 @@ export function saveAnswers(questionnaireId: string, answers: AnswerMap) {
 
 export function loadAnswers(questionnaireId: string): AnswerMap {
   try {
-    return JSON.parse(localStorage.getItem(answersKey(questionnaireId)) || '{}');
+    const raw = JSON.parse(localStorage.getItem(answersKey(questionnaireId)) || '{}');
+    return normalizeAnswerMap(raw);
   } catch {
     return {};
   }
@@ -127,7 +172,7 @@ export async function fetchStoredAnswers(questionnaireId: string) {
     }
     const data = await res.json();
     console.debug('[ApiService] stored answers response', data);
-    return data.answers as AnswerMap;
+    return normalizeAnswerMap(data.answers);
   } catch (err) {
     console.warn('[ApiService] failed to fetch stored answers', err);
     return null;

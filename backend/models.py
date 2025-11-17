@@ -1,5 +1,15 @@
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union, Literal
+
+
+RightAnswer = Union[str, List[str]]
+
+
+class AnswerDetail(BaseModel):
+    value: Optional[str] = None
+    correct: Optional[Literal["yes", "no"]] = None
+    rightAnswer: Optional[RightAnswer] = None
+
 
 class Question(BaseModel):
     id: str
@@ -7,6 +17,7 @@ class Question(BaseModel):
     type: str  # 'text' | 'multichoice' | 'scale'
     options: Optional[List[str]] = None
     scaleMax: Optional[int] = None
+    rightAnswer: Optional[RightAnswer] = None
 
 class Questionnaire(BaseModel):
     id: str
@@ -17,12 +28,12 @@ class Questionnaire(BaseModel):
 class AnswersPayload(BaseModel):
     questionnaireId: Optional[str] = None
     userId: str
-    answers: Dict[str, str]
+    answers: Dict[str, AnswerDetail]
 
 class StoredAnswers(BaseModel):
     questionnaireId: str
     userId: str
-    answers: Dict[str, str]
+    answers: Dict[str, AnswerDetail]
 
 
 class QuestionnaireCreate(Questionnaire):

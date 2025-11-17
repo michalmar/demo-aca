@@ -4,6 +4,7 @@ export interface Question {
   type: 'text' | 'multichoice' | 'scale';
   options?: string[];
   scaleMax?: number;
+  rightAnswer?: string | string[] | null;
 }
 
 export const questionnaire = {

@@ -30,7 +30,46 @@ QUESTIONNAIRES = [
                 options=["Quiet reading", "Group discussion", "Hands-on projects", "Watching videos"],
             ),
         ],
-    )
+    ),
+    Questionnaire(
+        id="medieval-history-basics",
+        title="Medieval History Basics",
+        description="Assess key facts from medieval European history.",
+        questions=[
+            Question(
+                id="emperor-800ce",
+                text="Who was crowned Emperor of the Romans in 800 CE?",
+                type="text",
+                rightAnswer="Charlemagne",
+            ),
+            Question(
+                id="hundred-years-battle",
+                text="Which of these battles occurred during the Hundred Years' War?",
+                type="multichoice",
+                options=["Battle of Agincourt", "Battle of Tours", "Battle of Hastings", "Battle of Manzikert"],
+                rightAnswer="Battle of Agincourt",
+            ),
+            Question(
+                id="justinian-code",
+                text="What was the name of the law code commissioned by Emperor Justinian I?",
+                type="text",
+                rightAnswer="Corpus Juris Civilis",
+            ),
+            Question(
+                id="iberian-scholarship-languages",
+                text="Select the languages commonly used for scholarship in medieval Islamic Iberia.",
+                type="multichoice",
+                options=["Arabic", "Latin", "Old Norse", "Hebrew"],
+                rightAnswer=["Arabic", "Hebrew"],
+            ),
+            Question(
+                id="magna-carta-year",
+                text="In which year was Magna Carta sealed by King John of England?",
+                type="text",
+                rightAnswer="1215",
+            ),
+        ],
+    ),
 ]
 
-DEFAULT_QUESTIONNAIRE_ID = QUESTIONNAIRES[0].id
+DEFAULT_QUESTIONNAIRE_ID = QUESTIONNAIRES[1].id
