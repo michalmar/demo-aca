@@ -58,9 +58,11 @@ jobs:
           containerAppEnvironment: ${{ env.AZURE_CONTAINERAPPS_ENVIRONMENT }}
           acrName: ${{ env.AZURE_CONTAINER_REGISTRY }}
           imageToBuild: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          buildArguments: |
+            VITE_BACKEND_URL=https://${{ env.BACKEND_FQDN }}
           targetPort: ${{ env.FRONTEND_TARGET_PORT }}
           ingress: external
           runtimeStack: node:20-alpine
           environmentVariables: >-
-            VITE_BACKEND_URL=${{ env.BACKEND_FQDN }}
+            VITE_BACKEND_URL=https://${{ env.BACKEND_FQDN }}
 
