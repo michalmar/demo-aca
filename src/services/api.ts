@@ -107,10 +107,15 @@ export async function fetchStoredAnswers(questionnaireId: string) {
   const userId = getUserId();
   try {
     console.debug('[ApiService] fetching stored answers for user', userId, 'questionnaire', questionnaireId);
-    const res = await fetch(`${API_BASE}/api/questionnaires/${questionnaireId}/answers/${userId}`);
-    if (!res.ok) {
-      console.warn('[ApiService] stored answers not available', res.status);
+    const endpoint = `${API_BASE}/api/questionnaires/${questionnaireId}/answers/${userId}`;
+    const res = await fetch(endpoint);
+    if (res.status === 404) {
+      console.debug('[ApiService] no stored answers found for user', userId, 'on questionnaire', questionnaireId);
       return null;
+    }
+    if (!res.ok) {
+      const reason = await res.text().catch(() => '');
+      throw new Error(`Unexpected ${res.status} from stored answers endpoint${reason ? `: ${reason}` : ''}`);
     }
     const data = await res.json();
     console.debug('[ApiService] stored answers response', data);

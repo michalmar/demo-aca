@@ -109,17 +109,23 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
 
     let cancelled = false;
     (async () => {
-      const stored = await fetchStoredAnswers(questionnaireId);
-      if (cancelled || !stored) {
-        return;
-      }
-      setAnswers(prev => {
-        if (Object.keys(prev).length > 0) {
-          return prev;
+      try {
+        const stored = await fetchStoredAnswers(questionnaireId);
+        if (cancelled || !stored) {
+          return;
         }
-        saveAnswers(questionnaireId, stored);
-        return stored;
-      });
+        setAnswers(prev => {
+          if (Object.keys(prev).length > 0) {
+            return prev;
+          }
+          saveAnswers(questionnaireId, stored);
+          return stored;
+        });
+      } catch (fetchError) {
+        if (!cancelled) {
+          console.warn('[QuestionnaireProvider] unable to restore stored answers', fetchError);
+        }
+      }
     })();
 
     return () => {
