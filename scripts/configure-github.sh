@@ -157,6 +157,7 @@ set_github_variable() {
   local name=$1
   local env_var=$2
   local value=${!env_var}
+  value=${value//$'\r'/}
   echo "Setting variable $name"
   gh variable set "$name" --repo "$REPO" --body "$value" >/dev/null
 }
@@ -165,9 +166,10 @@ set_github_secret() {
   local name=$1
   local env_var=$2
   local value=${!env_var}
+  value=${value//$'\r'/}
   echo "Setting secret $name"
-  echo "Secret $value"
-  printf '%s' "$value" | gh secret set "$name" --repo "$REPO" --body - >/dev/null
+
+  gh secret set "$name" --repo "$REPO" --body "$value" >/dev/null
 }
 
 for entry in "${VARIABLE_MAP[@]}"; do
