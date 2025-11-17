@@ -29,7 +29,7 @@ FE_FQDN = os.getenv("FRONTEND_FQDN")
 # CORS for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", FE_FQDN],
+    allow_origins=["http://localhost:5173", f"https://{FE_FQDN}"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
