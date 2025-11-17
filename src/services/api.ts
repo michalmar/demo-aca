@@ -1,6 +1,19 @@
 import type { AnswerMap } from '../context/QuestionnaireContext';
 
-const KEY = 'student-questionnaire-answers-v1';
+export interface QuestionnaireResponse {
+  id: string;
+  title: string;
+  description: string;
+  questions: Array<{
+    id: string;
+    text: string;
+    type: 'text' | 'multichoice' | 'scale';
+    options?: string[];
+    scaleMax?: number;
+  }>;
+}
+
+const KEY_PREFIX = 'student-questionnaire-answers-v1';
 const API_BASE =
   import.meta.env.VITE_BACKEND_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -8,6 +21,10 @@ const API_BASE =
 // Surface resolved API base for debugging deployment issues.
 console.debug('[ApiService] using API base', API_BASE);
 const USER_ID_KEY = 'student-questionnaire-user-id';
+
+function answersKey(questionnaireId: string) {
+  return `${KEY_PREFIX}:${questionnaireId}`;
+}
 
 function getUserId() {
   let id = localStorage.getItem(USER_ID_KEY);
@@ -18,37 +35,61 @@ function getUserId() {
   return id;
 }
 
-export function saveAnswers(answers: AnswerMap) {
-  localStorage.setItem(KEY, JSON.stringify(answers));
-}
-
-export function loadAnswers(): AnswerMap {
-  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; }
-}
-
-export async function fetchQuestionnaire() {
+export function saveAnswers(questionnaireId: string, answers: AnswerMap) {
   try {
-    console.debug('[ApiService] fetching questionnaire from', `${API_BASE}/api/questionnaire`);
-    const res = await fetch(`${API_BASE}/api/questionnaire`);
+    localStorage.setItem(answersKey(questionnaireId), JSON.stringify(answers));
+  } catch (err) {
+    console.warn('[ApiService] failed to persist answers locally', err);
+  }
+}
+
+export function loadAnswers(questionnaireId: string): AnswerMap {
+  try {
+    return JSON.parse(localStorage.getItem(answersKey(questionnaireId)) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+export async function fetchQuestionnaires(): Promise<QuestionnaireResponse[]> {
+  const endpoint = `${API_BASE}/api/questionnaires`;
+  try {
+    console.debug('[ApiService] fetching questionnaires from', endpoint);
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error(`Bad response (${res.status})`);
+    const payload = await res.json();
+    console.debug('[ApiService] questionnaires response', payload);
+    return payload as QuestionnaireResponse[];
+  } catch (err) {
+    console.warn('[ApiService] failed to fetch questionnaires', err);
+    return [];
+  }
+}
+
+export async function fetchQuestionnaire(questionnaireId?: string): Promise<QuestionnaireResponse | null> {
+  const path = questionnaireId ? `/api/questionnaires/${questionnaireId}` : '/api/questionnaire';
+  const endpoint = `${API_BASE}${path}`;
+  try {
+    console.debug('[ApiService] fetching questionnaire from', endpoint);
+    const res = await fetch(endpoint);
     if (!res.ok) throw new Error(`Bad response (${res.status})`);
     const payload = await res.json();
     console.debug('[ApiService] questionnaire response', payload);
-    return payload;
+    return payload as QuestionnaireResponse;
   } catch (err) {
     console.warn('[ApiService] failed to fetch questionnaire', err);
-    // Fallback: front-end static data already imported elsewhere
     return null;
   }
 }
 
-export async function postAnswers(answers: AnswerMap) {
+export async function postAnswers(questionnaireId: string, answers: AnswerMap) {
   const userId = getUserId();
   try {
-    console.debug('[ApiService] posting answers for user', userId, answers);
-    const res = await fetch(`${API_BASE}/api/answers`, {
+    console.debug('[ApiService] posting answers for user', userId, 'questionnaire', questionnaireId, answers);
+    const res = await fetch(`${API_BASE}/api/questionnaires/${questionnaireId}/answers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, answers })
+      body: JSON.stringify({ userId, questionnaireId, answers })
     });
     if (!res.ok) throw new Error(`Failed to submit (${res.status})`);
     const payload = await res.json();
@@ -62,11 +103,11 @@ export async function postAnswers(answers: AnswerMap) {
   }
 }
 
-export async function fetchStoredAnswers() {
+export async function fetchStoredAnswers(questionnaireId: string) {
   const userId = getUserId();
   try {
-    console.debug('[ApiService] fetching stored answers for user', userId);
-    const res = await fetch(`${API_BASE}/api/answers/${userId}`);
+    console.debug('[ApiService] fetching stored answers for user', userId, 'questionnaire', questionnaireId);
+    const res = await fetch(`${API_BASE}/api/questionnaires/${questionnaireId}/answers/${userId}`);
     if (!res.ok) {
       console.warn('[ApiService] stored answers not available', res.status);
       return null;

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from azure.cosmos import CosmosClient, PartitionKey, exceptions
 from azure.identity import ManagedIdentityCredential
@@ -52,6 +52,10 @@ _QUESTIONNAIRE_PARTITION_KEY = _get_setting(
 _client: Optional[CosmosClient] = None
 _answers_container = None
 _questionnaire_container = None
+
+
+def _prune_system_fields(document: Dict) -> Dict:
+    return {key: value for key, value in document.items() if not key.startswith("_")}
 
 
 def _should_skip_ssl_verification() -> bool:
@@ -148,20 +152,27 @@ def cosmos_available() -> bool:
     return _answers_container is not None
 
 
-def upsert_answers(user_id: str, answers: dict):
+def upsert_answers(user_id: str, questionnaire_id: str, answers: dict):
     if not cosmos_available():
         logger.debug("Cosmos unavailable when upserting answers for user %s; returning None", user_id)
         return None
-    document = {"id": user_id, "userId": user_id, "answers": answers}
+    document_id = f"{questionnaire_id}:{user_id}"
+    document = {
+        "id": document_id,
+        "userId": user_id,
+        "questionnaireId": questionnaire_id,
+        "answers": answers,
+    }
     _answers_container.upsert_item(document)
     return document
 
 
-def read_answers(user_id: str):
+def read_answers(user_id: str, questionnaire_id: str):
     if not cosmos_available():
         return None
     try:
-        return _answers_container.read_item(item=user_id, partition_key=user_id)
+        document_id = f"{questionnaire_id}:{user_id}"
+        return _answers_container.read_item(item=document_id, partition_key=user_id)
     except exceptions.CosmosResourceNotFoundError:
         return None
 
@@ -177,15 +188,32 @@ def upsert_questionnaire(doc: dict):
     _questionnaire_container.upsert_item(doc)
     return doc
 
-
-def read_questionnaire():
+def read_questionnaire(questionnaire_id: str):
     if not questionnaire_available():
         logger.debug("Cosmos questionnaire container not available; cannot read questionnaire")
         return None
     try:
-        return _questionnaire_container.read_item(
-            item="questionnaire",
-            partition_key="questionnaire",
-        )
+        document = _questionnaire_container.read_item(item=questionnaire_id, partition_key=questionnaire_id)
+        return _prune_system_fields(document)
     except exceptions.CosmosResourceNotFoundError:
         return None
+
+
+def list_questionnaires() -> Optional[List[Dict]]:
+    if not questionnaire_available():
+        logger.debug("Cosmos questionnaire container not available; cannot list questionnaires")
+        return None
+    query = "SELECT * FROM c"
+    items = _questionnaire_container.query_items(query=query, enable_cross_partition_query=True)
+    return [_prune_system_fields(item) for item in items]
+
+
+def delete_questionnaire(questionnaire_id: str) -> bool:
+    if not questionnaire_available():
+        logger.debug("Cosmos questionnaire container not available; cannot delete questionnaire %s", questionnaire_id)
+        return False
+    try:
+        _questionnaire_container.delete_item(item=questionnaire_id, partition_key=questionnaire_id)
+        return True
+    except exceptions.CosmosResourceNotFoundError:
+        return False

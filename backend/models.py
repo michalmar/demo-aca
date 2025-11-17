@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 class Question(BaseModel):
     id: str
@@ -9,14 +9,27 @@ class Question(BaseModel):
     scaleMax: Optional[int] = None
 
 class Questionnaire(BaseModel):
+    id: str
     title: str
     description: str
     questions: List[Question]
 
 class AnswersPayload(BaseModel):
+    questionnaireId: Optional[str] = None
     userId: str
     answers: Dict[str, str]
 
 class StoredAnswers(BaseModel):
+    questionnaireId: str
     userId: str
     answers: Dict[str, str]
+
+
+class QuestionnaireCreate(Questionnaire):
+    pass
+
+
+class QuestionnaireUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    questions: Optional[List[Question]] = None
