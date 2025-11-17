@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { questionnaire as staticQuestionnaire, type Question } from '../data/questionnaire';
 import {
+  clearPersistedAnswers,
   fetchQuestionnaire,
   fetchQuestionnaires,
   fetchStoredAnswers,
@@ -32,6 +33,7 @@ interface ContextValue {
   questionnaireId: string;
   questionnaires: QuestionnaireData[];
   setQuestionnaireId: (id: string) => void;
+  resetAnswers: () => Promise<void>;
 }
 
 const Ctx = createContext<ContextValue | undefined>(undefined);
@@ -143,6 +145,16 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
   const next = () => setCurrentIndex(i => Math.min(i + 1, questions.length - 1));
   const prev = () => setCurrentIndex(i => Math.max(i - 1, 0));
   const submit = async () => { await postAnswers(questionnaireId, answers); };
+  const resetAnswers = async () => {
+    clearPersistedAnswers(questionnaireId);
+    setAnswers({});
+    setCurrentIndex(0);
+    try {
+      await postAnswers(questionnaireId, {});
+    } catch (err) {
+      console.warn('[QuestionnaireProvider] failed to clear remote answers', err);
+    }
+  };
   const completed = questions.every(q => answers[q.id]);
 
   return (
@@ -162,7 +174,8 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
         error,
         questionnaireId,
         questionnaires,
-        setQuestionnaireId
+        setQuestionnaireId,
+        resetAnswers
       }}
     >
       {children}

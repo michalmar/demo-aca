@@ -26,6 +26,14 @@ function answersKey(questionnaireId: string) {
   return `${KEY_PREFIX}:${questionnaireId}`;
 }
 
+export function clearPersistedAnswers(questionnaireId: string) {
+  try {
+    localStorage.removeItem(answersKey(questionnaireId));
+  } catch (err) {
+    console.warn('[ApiService] failed to clear persisted answers', err);
+  }
+}
+
 function getUserId() {
   let id = localStorage.getItem(USER_ID_KEY);
   if (!id) {

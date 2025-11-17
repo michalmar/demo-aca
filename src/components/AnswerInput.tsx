@@ -16,13 +16,25 @@ const AnswerInput: React.FC = () => {
     completed,
     submit,
     loading,
-    title
+    title,
+    resetAnswers
   } = useQuestionnaire();
   const q = questions[currentIndex];
+  const [clearing, setClearing] = React.useState(false);
 
   const onChange = (val: string) => {
     if (!q) return;
     setAnswer(q.id, val);
+  };
+
+  const onClear = async () => {
+    if (clearing) return;
+    setClearing(true);
+    try {
+      await resetAnswers();
+    } finally {
+      setClearing(false);
+    }
   };
 
   return (
@@ -78,16 +90,19 @@ const AnswerInput: React.FC = () => {
               )}
             </CardContent>
             <CardFooter className="flex items-center justify-between gap-2 pt-0">
-              <Button variant="outline" disabled={currentIndex === 0} onClick={prev}>
+              <Button variant="outline" disabled={currentIndex === 0 || clearing} onClick={prev}>
                 Back
               </Button>
+              <Button variant="secondary" onClick={onClear} disabled={clearing || loading}>
+                {clearing ? 'Clearing...' : 'Clear'}
+              </Button>
               {currentIndex < questions.length - 1 && (
-                <Button onClick={next} disabled={!answers[q.id]}>
+                <Button onClick={next} disabled={!answers[q.id] || clearing}>
                   Next
                 </Button>
               )}
               {currentIndex === questions.length - 1 && (
-                <Button onClick={submit} disabled={!completed}>
+                <Button onClick={submit} disabled={!completed || clearing}>
                   {completed ? 'Submit' : 'Finish Answers'}
                 </Button>
               )}
