@@ -73,7 +73,7 @@ Both backend and frontend are deployed to Azure Container Apps using GitHub Acti
 - Triggers on changes to `backend/**` or workflow file
 - Builds Docker image from `backend/Dockerfile`
 - Deploys to Azure Container Apps with FastAPI (Python 3.11)
-- Environment variables: `AZURE_CLIENT_ID`, `COSMOS_ENDPOINT`, `COSMOS_DATABASE_NAME`, `COSMOS_CONTAINER_NAME`, `FRONTEND_FQDN`
+- Environment variables: `AZURE_CLIENT_ID`, `COSMOS_ENDPOINT`, `COSMOS_DATABASE_NAME`, `COSMOS_ANSWERS_CONTAINER_NAME`, `COSMOS_QUESTIONNAIRE_CONTAINER_NAME`, `FRONTEND_FQDN`
 
 #### Frontend Deployment
 - Workflow: `.github/workflows/deploy-frontend.yml`
@@ -95,7 +95,7 @@ Both backend and frontend are deployed to Azure Container Apps using GitHub Acti
   - Secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
   - Variables: `AZURE_RESOURCE_GROUP`, `AZURE_CONTAINERAPPS_ENVIRONMENT`, `AZURE_CONTAINER_REGISTRY`
   - Variables: `AZURE_BACKEND_APP_NAME`, `AZURE_FRONTEND_APP_NAME`
-  - Variables: `COSMOS_ENDPOINT`, `COSMOS_DATABASE_NAME`, `COSMOS_CONTAINER_NAME`
+  - Variables: `COSMOS_ENDPOINT`, `COSMOS_DATABASE_NAME`, `COSMOS_ANSWERS_CONTAINER_NAME`, `COSMOS_QUESTIONNAIRE_CONTAINER_NAME`
   - Variables: `MANAGED_IDENTITY_CLIENT_ID`, `BACKEND_FQDN`, `FRONTEND_FQDN`
 - Ensure you are authenticated with `gh auth login` before running the script. Refresh the azd environment (`azd provision` or `azd env refresh`) so the `.env` file contains up-to-date outputs prior to execution.
 - Adjust `infra/main.parameters.json` if you customize resource names; re-run the script afterwards to refresh GitHub configuration.

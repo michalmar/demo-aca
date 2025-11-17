@@ -7,11 +7,17 @@ param accountName string
 @description('SQL database name.')
 param databaseName string
 
-@description('SQL container name.')
-param containerName string
+@description('Primary SQL container name for storing questionnaire answers.')
+param answersContainerName string
 
-@description('Partition key path for the SQL container.')
-param partitionKeyPath string
+@description('Partition key path for the answers container.')
+param answersPartitionKeyPath string
+
+@description('Secondary SQL container name holding questionnaire metadata.')
+param questionnaireContainerName string
+
+@description('Partition key path for the questionnaire container.')
+param questionnairePartitionKeyPath string
 
 @description('Principal ID of the user executing the deployment')
 param userPrincipalId string
@@ -68,16 +74,47 @@ resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2023-04-15
   }
 }
 
-resource container 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
-  name: containerName
+resource answersContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  name: answersContainerName
   parent: database
   properties: {
     resource: {
-      id: containerName
+      id: answersContainerName
       partitionKey: {
         kind: 'Hash'
         paths: [
-          partitionKeyPath
+          answersPartitionKeyPath
+        ]
+      }
+      indexingPolicy: {
+        indexingMode: 'consistent'
+        automatic: true
+        includedPaths: [
+          {
+            path: '/*'
+          }
+        ]
+        excludedPaths: [
+          {
+            path: '/"_etag"/?'
+          }
+        ]
+      }
+    }
+    options: {}
+  }
+}
+
+resource questionnaireContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  name: questionnaireContainerName
+  parent: database
+  properties: {
+    resource: {
+      id: questionnaireContainerName
+      partitionKey: {
+        kind: 'Hash'
+        paths: [
+          questionnairePartitionKeyPath
         ]
       }
       indexingPolicy: {
@@ -132,4 +169,5 @@ output primaryKey string = keys.primaryMasterKey
 output connectionString string = connectionString
 output dataContributorRoleId string = dataContributorRoleId
 output databaseName string = databaseName
-output containerName string = containerName
+output answersContainerName string = answersContainerName
+output questionnaireContainerName string = questionnaireContainerName

@@ -40,8 +40,11 @@ param cosmosEndpoint string
 @description('Cosmos DB database name.')
 param cosmosDatabaseName string
 
-@description('Cosmos DB container name.')
-param cosmosContainerName string
+@description('Cosmos DB container name that stores questionnaire answers.')
+param cosmosAnswersContainerName string
+
+@description('Cosmos DB container name that stores questionnaire metadata.')
+param cosmosQuestionnaireContainerName string
 
 @description('Login server of the Azure Container Registry used for the image.')
 param acrLoginServer string
@@ -65,8 +68,12 @@ var mergedEnv = concat(
       value: cosmosDatabaseName
     }
     {
-      name: 'COSMOS_CONTAINER_NAME'
-      value: cosmosContainerName
+      name: 'COSMOS_ANSWERS_CONTAINER_NAME'
+      value: cosmosAnswersContainerName
+    }
+    {
+      name: 'COSMOS_QUESTIONNAIRE_CONTAINER_NAME'
+      value: cosmosQuestionnaireContainerName
     }
   ]
 )

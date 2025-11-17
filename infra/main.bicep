@@ -28,13 +28,19 @@ param adminUserEnabled bool = true
 param cosmosAccountName string
 
 @description('Name of the Cosmos DB SQL database.')
-param cosmosDatabaseName string = 'appdb'
+param cosmosDatabaseName string = 'questionnaire_db'
 
-@description('Name of the Cosmos DB SQL container.')
-param cosmosContainerName string = 'questionnaire'
+@description('Name of the Cosmos DB SQL container that stores questionnaire answers.')
+param cosmosAnswersContainerName string = 'answers'
 
-@description('Partition key path for the Cosmos DB SQL container.')
-param cosmosContainerPartitionKey string = '/partitionKey'
+@description('Partition key path for the answers container.')
+param cosmosAnswersPartitionKey string = '/userId'
+
+@description('Name of the Cosmos DB SQL container that stores questionnaire metadata.')
+param cosmosQuestionnaireContainerName string = 'questionnaire'
+
+@description('Partition key path for the questionnaire container.')
+param cosmosQuestionnairePartitionKey string = '/id'
 
 @description('Name of the backend Azure Container App.')
 param backendAppName string = 'backend-api'
@@ -124,8 +130,10 @@ module cosmos 'modules/cosmos.bicep' = {
     location: location
     accountName: cosmosAccountName
     databaseName: cosmosDatabaseName
-    containerName: cosmosContainerName
-    partitionKeyPath: cosmosContainerPartitionKey 
+    answersContainerName: cosmosAnswersContainerName
+    answersPartitionKeyPath: cosmosAnswersPartitionKey 
+    questionnaireContainerName: cosmosQuestionnaireContainerName
+    questionnairePartitionKeyPath: cosmosQuestionnairePartitionKey
     userPrincipalId: principalId
     backendPrincipalId: backendIdentity.outputs.principalId
   }
@@ -175,7 +183,8 @@ module backendApp 'modules/container-app-backend.bicep' = {
     identityClientId: backendIdentity.outputs.clientId
     cosmosEndpoint: cosmos.outputs.endpoint
     cosmosDatabaseName: cosmosDatabaseName
-    cosmosContainerName: cosmosContainerName
+    cosmosAnswersContainerName: cosmosAnswersContainerName
+    cosmosQuestionnaireContainerName: cosmosQuestionnaireContainerName
     acrLoginServer: containerRegistry.outputs.loginServer
     tags: resourceTags
   }
@@ -282,4 +291,5 @@ output containerAppsEnvironmentName string = containerAppsEnvironmentName
 output backendAppName string = backendAppName
 output acrName string = acrName
 output cosmosDatabaseName string = cosmos.outputs.databaseName
-output cosmosContainerName string = cosmos.outputs.containerName
+output cosmosAnswersContainerName string = cosmos.outputs.answersContainerName
+output cosmosQuestionnaireContainerName string = cosmos.outputs.questionnaireContainerName

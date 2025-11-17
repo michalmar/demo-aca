@@ -89,8 +89,12 @@ if [[ -n "${cosmosDatabaseName:-}" && -z "${COSMOS_DATABASE_NAME:-}" ]]; then
   export COSMOS_DATABASE_NAME=$cosmosDatabaseName
 fi
 
-if [[ -n "${cosmosContainerName:-}" && -z "${COSMOS_CONTAINER_NAME:-}" ]]; then
-  export COSMOS_CONTAINER_NAME=$cosmosContainerName
+if [[ -n "${cosmosAnswersContainerName:-}" && -z "${COSMOS_ANSWERS_CONTAINER_NAME:-}" ]]; then
+  export COSMOS_ANSWERS_CONTAINER_NAME=$cosmosAnswersContainerName
+fi
+
+if [[ -n "${cosmosQuestionnaireContainerName:-}" && -z "${COSMOS_QUESTIONNAIRE_CONTAINER_NAME:-}" ]]; then
+  export COSMOS_QUESTIONNAIRE_CONTAINER_NAME=$cosmosQuestionnaireContainerName
 fi
 
 missing=0
@@ -119,7 +123,8 @@ VARIABLE_MAP=(
   "AZURE_CONTAINER_REGISTRY_LOGIN:acrLoginServer"
   "COSMOS_ENDPOINT:cosmosEndpoint"
   "COSMOS_DATABASE_NAME:cosmosDatabaseName"
-  "COSMOS_CONTAINER_NAME:cosmosContainerName"
+  "COSMOS_ANSWERS_CONTAINER_NAME:cosmosAnswersContainerName"
+  "COSMOS_QUESTIONNAIRE_CONTAINER_NAME:cosmosQuestionnaireContainerName"
 )
 
 SECRET_MAP=(
