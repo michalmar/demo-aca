@@ -31,6 +31,14 @@ from questionnaire_store import (
 )
 from storage import save_answers, get_answers, init_storage
 
+
+def _answers_or_empty(user_id: str, questionnaire_id: str) -> StoredAnswers:
+    stored = get_answers(user_id, questionnaire_id)
+    if stored:
+        return stored
+    # Return an empty payload so callers don't need to special-case new users.
+    return StoredAnswers(userId=user_id, questionnaireId=questionnaire_id, answers={})
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_storage()
@@ -101,10 +109,7 @@ def post_answers(payload: AnswersPayload):
 @app.get("/api/answers/{user_id}", response_model=StoredAnswers)
 def fetch_answers(user_id: str, questionnaire_id: Optional[str] = Query(default=None)):
     effective_id = questionnaire_id or get_default_questionnaire().id
-    stored = get_answers(user_id, effective_id)
-    if not stored:
-        raise HTTPException(status_code=404, detail="Answers not found")
-    return stored
+    return _answers_or_empty(user_id, effective_id)
 
 
 @app.post("/api/questionnaires/{questionnaire_id}/answers", response_model=StoredAnswers, status_code=201)
@@ -118,10 +123,7 @@ def post_answers_for_questionnaire(questionnaire_id: str, payload: AnswersPayloa
 
 @app.get("/api/questionnaires/{questionnaire_id}/answers/{user_id}", response_model=StoredAnswers)
 def fetch_answers_for_questionnaire(questionnaire_id: str, user_id: str):
-    stored = get_answers(user_id, questionnaire_id)
-    if not stored:
-        raise HTTPException(status_code=404, detail="Answers not found")
-    return stored
+    return _answers_or_empty(user_id, questionnaire_id)
 
 @app.get("/health")
 def health():
