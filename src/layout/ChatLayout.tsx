@@ -1,5 +1,6 @@
 import React from 'react';
-import { ClipboardList, HelpCircle, MessageSquare, Settings } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { ClipboardList, GraduationCap, HelpCircle, MessageSquare, Settings, Sparkles } from 'lucide-react';
 
 import { ModeToggle } from '@/components/ModeToggle';
 import AnswerInput from '../components/AnswerInput';
@@ -8,8 +9,15 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import type { QuestionnaireType } from '@/data/questionnaire';
 
 type AnswerState = 'pending' | 'correct' | 'incorrect';
+
+const questionnaireTypeIconMap: Record<QuestionnaireType, LucideIcon> = {
+  question: ClipboardList,
+  test: GraduationCap,
+  flashcard: Sparkles,
+};
 
 const ChatLayout: React.FC = () => {
   const {
@@ -69,6 +77,14 @@ const ChatLayout: React.FC = () => {
       setRetaking(false);
     }
   };
+  const questionnaireTypeIconMap: Record<QuestionnaireType, LucideIcon> = React.useMemo(
+    () => ({
+      question: ClipboardList,
+      test: GraduationCap,
+      flashcard: Sparkles,
+    }),
+    []
+  );
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -85,22 +101,25 @@ const ChatLayout: React.FC = () => {
             <div>
               <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Questionnaires</p>
               <div className="mt-3 space-y-1">
-                {questionnaires.map(q => (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => setQuestionnaireId(q.id)}
-                    className={cn(
-                      'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
-                      questionnaireId === q.id
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    )}
-                  >
-                    <ClipboardList className="h-4 w-4" />
-                    <span className="truncate">{q.title}</span>
-                  </button>
-                ))}
+                {questionnaires.map(q => {
+                  const Icon = questionnaireTypeIconMap[q.type] ?? ClipboardList;
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => setQuestionnaireId(q.id)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
+                        questionnaireId === q.id
+                          ? 'bg-primary/10 text-primary'
+                          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="truncate">{q.title}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div>
