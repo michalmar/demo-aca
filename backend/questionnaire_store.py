@@ -32,6 +32,49 @@ logger = logging.getLogger(__name__)
 _memory_store: Dict[str, Questionnaire] = {q.id: q for q in QUESTIONNAIRES}
 
 
+def _coerce_questionnaire_doc(doc: Dict[str, object]) -> Questionnaire:
+    data = dict(doc)
+    if "type" not in data and "questionnaireType" in data:
+        data["type"] = data.get("questionnaireType")
+    data.pop("questionnaireType", None)
+    data.setdefault("type", "question")
+    return Questionnaire(**data)
+
+
+def _validate_questionnaire(questionnaire: Questionnaire) -> None:
+    q_type = questionnaire.type
+    if q_type == "test":
+        missing = [
+            q.id
+            for q in questionnaire.questions
+            if (
+                q.rightAnswer is None
+                or (isinstance(q.rightAnswer, str) and not q.rightAnswer.strip())
+                or (isinstance(q.rightAnswer, list) and len(q.rightAnswer) == 0)
+            )
+        ]
+        if missing:
+            raise ValueError(
+                "Test questionnaires require a rightAnswer for every question; missing on: "
+                + ", ".join(missing)
+            )
+    if q_type == "flashcard":
+        blanks = [
+            q.id
+            for q in questionnaire.questions
+            if (
+                q.rightAnswer is None
+                or (isinstance(q.rightAnswer, str) and not q.rightAnswer.strip())
+                or (isinstance(q.rightAnswer, list) and len(q.rightAnswer) == 0)
+            )
+        ]
+        if blanks:
+            raise ValueError(
+                "Flashcard questionnaires must provide rightAnswer content for each card; missing on: "
+                + ", ".join(blanks)
+            )
+
+
 def _use_memory_store() -> bool:
     return not questionnaire_available()
 
@@ -66,14 +109,14 @@ def list_questionnaires() -> List[Questionnaire]:
     if docs is None:
         logger.debug("Cosmos list returned None; falling back to in-memory questionnaires")
         return list(_memory_store.values())
-    return [Questionnaire(**doc) for doc in docs]
+    return [_coerce_questionnaire_doc(doc) for doc in docs]
 
 
 def get_questionnaire(questionnaire_id: str) -> Optional[Questionnaire]:
     if _use_memory_store():
         return _memory_store.get(questionnaire_id)
     doc = cosmos_read_questionnaire(questionnaire_id)
-    return Questionnaire(**doc) if doc else None
+    return _coerce_questionnaire_doc(doc) if doc else None
 
 
 def get_default_questionnaire() -> Questionnaire:
@@ -88,14 +131,17 @@ def create_questionnaire(payload: QuestionnaireCreate) -> Questionnaire:
     if _use_memory_store():
         if payload.id in _memory_store:
             raise ValueError(f"Questionnaire with id '{payload.id}' already exists")
-        return _store_questionnaire_locally(Questionnaire(**payload.model_dump()))
+        questionnaire = Questionnaire(**payload.model_dump())
+        _validate_questionnaire(questionnaire)
+        return _store_questionnaire_locally(questionnaire)
 
     existing = cosmos_read_questionnaire(payload.id)
     if existing:
         raise ValueError(f"Questionnaire with id '{payload.id}' already exists")
 
-    cosmos_upsert_questionnaire(payload.model_dump())
     questionnaire = Questionnaire(**payload.model_dump())
+    _validate_questionnaire(questionnaire)
+    cosmos_upsert_questionnaire(questionnaire.model_dump())
     _store_questionnaire_locally(questionnaire)
     return questionnaire
 
@@ -108,6 +154,7 @@ def update_questionnaire(questionnaire_id: str, updates: QuestionnaireUpdate) ->
     update_data = updates.model_dump(exclude_unset=True, exclude_none=True)
     merged_data = {**stored.model_dump(), **update_data}
     updated = Questionnaire(**merged_data)
+    _validate_questionnaire(updated)
 
     if _use_memory_store():
         return _store_questionnaire_locally(updated)

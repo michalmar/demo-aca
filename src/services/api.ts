@@ -1,9 +1,13 @@
 import type { AnswerMap } from '../context/QuestionnaireContext';
 
+export type QuestionnaireType = 'question' | 'test' | 'flashcard';
+
 export interface QuestionnaireResponse {
   id: string;
   title: string;
   description: string;
+  type?: QuestionnaireType;
+  questionnaireType?: QuestionnaireType;
   questions: Array<{
     id: string;
     text: string;
@@ -58,11 +62,13 @@ function normalizeAnswerMap(raw: unknown): AnswerMap {
       const recordValue = typeof storedValue === 'string' ? storedValue : '';
       const correct = obj.correct === 'yes' || obj.correct === 'no' ? obj.correct : undefined;
       const rightAnswer = normalizeRightAnswer(obj.rightAnswer);
+      const revealed = typeof obj.revealed === 'boolean' ? obj.revealed : undefined;
 
       output[key] = {
         value: recordValue,
         correct,
         rightAnswer,
+        revealed,
       };
     }
   }

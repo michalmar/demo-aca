@@ -7,10 +7,13 @@ export interface Question {
   rightAnswer?: string | string[] | null;
 }
 
+export type QuestionnaireType = 'question' | 'test' | 'flashcard';
+
 export const questionnaire = {
   id: 'getting-to-know-you',
   title: 'Getting to Know You',
   description: 'Answer the following to personalize your learning path.',
+  type: 'question' as QuestionnaireType,
   questions: [
     { id: 'nickname', text: 'What nickname do you like to use?', type: 'text' },
     { id: 'favSubject', text: 'Which subject do you enjoy most?', type: 'multichoice', options: ['Math', 'Science', 'History', 'Art', 'Sports'] },

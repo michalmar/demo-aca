@@ -13,6 +13,7 @@ QUESTIONNAIRES = [
         id="getting-to-know-you",
         title="Getting to Know You",
         description="Answer the following to personalize your learning path.",
+        type="question",
         questions=[
             Question(id="nickname", text="What nickname do you like to use?", type="text"),
             Question(
@@ -35,6 +36,7 @@ QUESTIONNAIRES = [
         id="medieval-history-basics",
         title="Medieval History Basics",
         description="Assess key facts from medieval European history.",
+        type="test",
         questions=[
             Question(
                 id="emperor-800ce",
@@ -67,6 +69,32 @@ QUESTIONNAIRES = [
                 text="In which year was Magna Carta sealed by King John of England?",
                 type="text",
                 rightAnswer="1215",
+            ),
+        ],
+    ),
+    Questionnaire(
+        id="spaced-recall-intro",
+        title="Spaced Recall: Introductory CS Concepts",
+        description="Flip each card to reveal concise explanations for foundational computer science terms.",
+        type="flashcard",
+        questions=[
+            Question(
+                id="data-structure",
+                text="Data Structure",
+                type="text",
+                rightAnswer="An organized format for storing and managing data to enable efficient access and modification.",
+            ),
+            Question(
+                id="algorithm",
+                text="Algorithm",
+                type="text",
+                rightAnswer="A finite, ordered set of instructions designed to perform a specific task or solve a problem.",
+            ),
+            Question(
+                id="big-o",
+                text="Big-O Notation",
+                type="text",
+                rightAnswer="A mathematical notation describing how an algorithm's running time or space grows with input size.",
             ),
         ],
     ),

@@ -77,3 +77,29 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #3b82f6;
 }
+
+.flashcard-container {
+  perspective: 1600px;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  transition: transform 0.55s ease;
+  transform-style: preserve-3d;
+}
+
+.flashcard-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: calc(var(--radius) - 0.125rem);
+}
+
+.flashcard-face.back {
+  transform: rotateY(180deg);
+}
