@@ -109,6 +109,8 @@ def init_cosmos() -> bool:
         COSMOS_QUESTIONNAIRE_CONTAINER,
     )
 
+    logger.error(f"Im here with {COSMOS_DATABASE_NAME}")
+
     if not COSMOS_ENDPOINT:
         logger.warning("Skipping Cosmos initialization because endpoint is missing. Using in-memory fallback.")
         return False  # not configured; use in-memory fallback
