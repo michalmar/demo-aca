@@ -3,7 +3,8 @@ from pathlib import Path
 
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Response, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
@@ -13,6 +14,7 @@ import os
 import sys
 
 sys.path.append(str(Path(__file__).resolve().parent))
+import cosmos
 from models import (
     AnswersPayload,
     Questionnaire,
@@ -124,6 +126,46 @@ def post_answers_for_questionnaire(questionnaire_id: str, payload: AnswersPayloa
 @app.get("/api/questionnaires/{questionnaire_id}/answers/{user_id}", response_model=StoredAnswers)
 def fetch_answers_for_questionnaire(questionnaire_id: str, user_id: str):
     return _answers_or_empty(user_id, questionnaire_id)
+
+
+@app.get("/check")
+def check_cosmos_connection():
+    """Return the current Cosmos DB connectivity status."""
+
+    connected = False
+    detail = "Cosmos DB connection not initialized."
+
+    try:
+        connected = cosmos.cosmos_available()
+        if connected:
+            detail = "Cosmos DB connection is healthy."
+        else:
+            # Attempt a one-time re-initialization in case connectivity was restored.
+            init_attempt = cosmos.init_cosmos()
+            if init_attempt and cosmos.cosmos_available():
+                connected = True
+                detail = "Cosmos DB connection re-established after re-initialization."
+            else:
+                detail = "Cosmos DB is unavailable or not configured; API is using in-memory storage."
+    except Exception as exc:  # pragma: no cover - defensive logging
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "error",
+                "connected": False,
+                "detail": f"Failed to verify Cosmos DB connectivity: {exc}",
+            },
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if connected else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={
+            "status": "ok" if connected else "unavailable",
+            "connected": connected,
+            "detail": detail,
+        },
+    )
+
 
 @app.get("/health")
 def health():
