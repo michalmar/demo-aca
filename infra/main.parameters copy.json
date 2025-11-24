@@ -1,0 +1,136 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus2"
+    },
+    "resourceTags": {
+      "value": {
+        "project": "demo-aca-eus2"
+      }
+    },
+    "containerAppsEnvironmentName": {
+      "value": "demo-aca-env-eus2"
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "demoacalog"
+    },
+    "virtualNetworkName": {
+      "value": "demo-aca-vnet"
+    },
+    "virtualNetworkAddressPrefix": {
+      "value": "10.20.0.0/16"
+    },
+    "containerAppsInfrastructureSubnetName": {
+      "value": "aca-infra-snet"
+    },
+    "containerAppsInfrastructureSubnetPrefix": {
+      "value": "10.20.1.0/24"
+    },
+    "containerAppsRuntimeSubnetName": {
+      "value": "aca-runtime-snet"
+    },
+    "containerAppsRuntimeSubnetPrefix": {
+      "value": "10.20.2.0/24"
+    },
+    "privateEndpointSubnetName": {
+      "value": "data-pe-snet"
+    },
+    "privateEndpointSubnetPrefix": {
+      "value": "10.20.3.0/24"
+    },
+    "cosmosPrivateEndpointName": {
+      "value": "demo-aca-cosmos-pe"
+    },
+    "cosmosAccountName": {
+      "value": "demoacacosmosaccteus2"
+    },
+    "backendAppName": {
+      "value": "demo-aca-backend"
+    },
+    "backendContainerImage": {
+      "value": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+    },
+    "backendTargetPort": {
+      "value": 8080
+    },
+    "backendMinReplicas": {
+      "value": 1
+    },
+    "backendMaxReplicas": {
+      "value": 2
+    },
+    "backendCpu": {
+      "value": "0.5"
+    },
+    "backendMemory": {
+      "value": "1Gi"
+    },
+    "backendEnvironmentVariables": {
+      "value": [
+        {
+          "name": "API_BASE_PATH",
+          "value": "/api"
+        }
+      ]
+    },
+    "backendIdentityName": {
+      "value": "demo-aca-backend-id"
+    },
+    "frontendIdentityName": {
+      "value": "demo-aca-frontend-id"
+    },
+    "acrName": {
+      "value": "demoacaacr2025112"
+    },
+    "acrSku": {
+      "value": "Basic"
+    },
+    "frontendAppName": {
+      "value": "demo-aca-frontend"
+    },
+    "frontendContainerImage": {
+      "value": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
+    },
+    "frontendTargetPort": {
+      "value": 3000
+    },
+    "frontendMinReplicas": {
+      "value": 1
+    },
+    "frontendMaxReplicas": {
+      "value": 2
+    },
+    "frontendCpu": {
+      "value": "0.5"
+    },
+    "frontendMemory": {
+      "value": "1Gi"
+    },
+    "githubIdentityName": {
+      "value": "demo-aca-github-mi"
+    },
+    "githubFederatedSubjects": {
+      "value": []
+    },
+    "cosmosDatabaseName": {
+      "value": "questionnaire_db"
+    },
+    "cosmosAnswersContainerName": {
+      "value": "answers"
+    },
+    "cosmosAnswersPartitionKey": {
+      "value": "/userId"
+    },
+    "cosmosQuestionnaireContainerName": {
+      "value": "questionnaire"
+    },
+    "cosmosQuestionnairePartitionKey": {
+      "value": "/id"
+    },
+    "principalId": {
+        "value": "${AZURE_PRINCIPAL_ID}"
+      }
+  }
+}

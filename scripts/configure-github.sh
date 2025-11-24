@@ -131,8 +131,6 @@ SECRET_MAP=(
   "AZURE_SUBSCRIPTION_ID:AZURE_SUBSCRIPTION_ID"
   "AZURE_TENANT_ID:AZURE_TENANT_ID"
   "AZURE_CLIENT_ID:githubManagedIdentityClientId"
-  "COSMOS_CONNECTION_STRING:cosmosPrimaryConnectionString"
-  "COSMOS_PRIMARY_KEY:cosmosPrimaryKey"
 )
 
 for entry in "${VARIABLE_MAP[@]}"; do

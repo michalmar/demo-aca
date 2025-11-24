@@ -44,6 +44,7 @@ resource account 'Microsoft.DocumentDB/databaseAccounts@2025-04-15' = {
     consistencyPolicy: {
       defaultConsistencyLevel: defaultConsistencyLevel
     }
+    minimalTlsVersion: 'Tls12'
     locations: [
       {
         locationName: location
@@ -59,8 +60,9 @@ resource account 'Microsoft.DocumentDB/databaseAccounts@2025-04-15' = {
     enableFreeTier: false
     enableAutomaticFailover: false
     enableMultipleWriteLocations: false
-    publicNetworkAccess: 'Enabled'
-    disableKeyBasedMetadataWriteAccess: false
+    publicNetworkAccess: 'Disabled'
+    disableKeyBasedMetadataWriteAccess: true
+    isVirtualNetworkFilterEnabled: true
   }
 }
 
@@ -136,8 +138,6 @@ resource questionnaireContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDataba
   }
 }
 
-var keys = listKeys(account.id, '2021-04-15')
-var connectionString = 'AccountEndpoint=${account.properties.documentEndpoint};AccountKey=${keys.primaryMasterKey};'
 var dataContributorRoleId = '${account.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
 
 resource userDataContributorRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
@@ -163,10 +163,6 @@ resource backendDataContributorRole 'Microsoft.DocumentDB/databaseAccounts/sqlRo
 output accountId string = account.id
 output accountName string = account.name
 output endpoint string = account.properties.documentEndpoint
-@secure()
-output primaryKey string = keys.primaryMasterKey
-@secure()
-output connectionString string = connectionString
 output dataContributorRoleId string = dataContributorRoleId
 output databaseName string = databaseName
 output answersContainerName string = answersContainerName

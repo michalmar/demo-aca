@@ -69,6 +69,33 @@ param backendEnvironmentVariables array = []
 @description('Name of the backend user-assigned managed identity.')
 param backendIdentityName string = '${backendAppName}-id'
 
+@description('Name of the virtual network for Container Apps and data services.')
+param virtualNetworkName string
+
+@description('Address prefix for the virtual network (CIDR).')
+param virtualNetworkAddressPrefix string = '10.20.0.0/16'
+
+@description('Name of the subnet delegated to Container Apps infrastructure components.')
+param containerAppsInfrastructureSubnetName string = 'aca-infrastructure-snet'
+
+@description('Address prefix for the infrastructure subnet (CIDR).')
+param containerAppsInfrastructureSubnetPrefix string = '10.20.0.0/23'
+
+@description('Name of the subnet delegated to Container Apps runtime workloads.')
+param containerAppsRuntimeSubnetName string = 'aca-runtime-snet'
+
+@description('Address prefix for the runtime subnet (CIDR).')
+param containerAppsRuntimeSubnetPrefix string = '10.20.2.0/24'
+
+@description('Name of the subnet reserved for private endpoints.')
+param privateEndpointSubnetName string = 'data-private-endpoints'
+
+@description('Address prefix for the private endpoint subnet (CIDR).')
+param privateEndpointSubnetPrefix string = '10.20.3.0/24'
+
+@description('Name of the private endpoint created for Cosmos DB.')
+param cosmosPrivateEndpointName string = 'cosmos-db-pe'
+
 @description('Name of the frontend Azure Container App.')
 param frontendAppName string = 'frontend-web'
 
@@ -102,6 +129,22 @@ param githubFederatedSubjects array = []
 @description('Id of the user or app to assign application roles')
 param principalId string
 
+module networking 'modules/networking.bicep' = {
+  name: 'networking'
+  params: {
+    location: location
+    virtualNetworkName: virtualNetworkName
+    addressPrefix: virtualNetworkAddressPrefix
+    infrastructureSubnetName: containerAppsInfrastructureSubnetName
+    infrastructureSubnetPrefix: containerAppsInfrastructureSubnetPrefix
+    runtimeSubnetName: containerAppsRuntimeSubnetName
+    runtimeSubnetPrefix: containerAppsRuntimeSubnetPrefix
+    privateEndpointSubnetName: privateEndpointSubnetName
+    privateEndpointSubnetPrefix: privateEndpointSubnetPrefix
+    tags: resourceTags
+  }
+}
+
 module containerAppEnvironment 'modules/container-app-environment.bicep' = {
   name: 'container-app-environment'
   params: {
@@ -110,6 +153,7 @@ module containerAppEnvironment 'modules/container-app-environment.bicep' = {
     logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
     logAnalyticsRetentionDays: logAnalyticsRetentionDays
     tags: resourceTags
+    infrastructureSubnetId: networking.outputs.infrastructureSubnetId
   }
 }
 
@@ -137,6 +181,21 @@ module cosmos 'modules/cosmos.bicep' = {
     userPrincipalId: principalId
     backendPrincipalId: backendIdentity.outputs.principalId
   }
+}
+
+module cosmosPrivateEndpoint 'modules/cosmos-private-endpoint.bicep' = {
+  name: 'cosmos-private-endpoint'
+  params: {
+    location: location
+    privateEndpointName: cosmosPrivateEndpointName
+    cosmosAccountId: cosmos.outputs.accountId
+    subnetId: networking.outputs.privateEndpointSubnetId
+    privateDnsZoneId: networking.outputs.privateDnsZoneId
+    tags: resourceTags
+  }
+  dependsOn: [
+    cosmos
+  ]
 }
 
 module backendIdentity 'modules/managed-identity.bicep' = {
@@ -279,8 +338,7 @@ resource githubFederatedCredentials 'Microsoft.ManagedIdentity/userAssignedIdent
 }]
 
 output cosmosEndpoint string = cosmos.outputs.endpoint
-output cosmosPrimaryKey string = cosmos.outputs.primaryKey
-output cosmosPrimaryConnectionString string = cosmos.outputs.connectionString
+output cosmosPrivateEndpointId string = cosmosPrivateEndpoint.outputs.privateEndpointId
 output backendFqdn string = backendApp.outputs.fqdn
 output frontendFqdn string = frontendApp.outputs.fqdn
 output acrLoginServer string = containerRegistry.outputs.loginServer
