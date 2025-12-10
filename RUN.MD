@@ -9,9 +9,10 @@ uvicorn main:app --reload --port 8020
 **Required environment variables for content generation (Azure OpenAI)**:
 ```bash
 export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com"
-export AZURE_OPENAI_API_KEY="your-api-key"
 export AZURE_OPENAI_MODEL="gpt-4o"  # or your deployed model name
 ```
+Note: Authentication uses Entra ID with DefaultAzureCredential (managed identity).
+For local development, ensure you're logged in via `az login`.
 
 **frontend**:
 ```bash

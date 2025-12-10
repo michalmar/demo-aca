@@ -9,6 +9,7 @@ import re
 from typing import Optional
 
 from openai import OpenAI
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,6 @@ def _get_setting(*keys: str, default: Optional[str] = None) -> Optional[str]:
 
 # Azure OpenAI configuration
 AZURE_OPENAI_ENDPOINT = _get_setting("AZURE_OPENAI_ENDPOINT")
-AZURE_OPENAI_API_KEY = _get_setting("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_MODEL = _get_setting("AZURE_OPENAI_MODEL", default="gpt-4o")
 
 
@@ -160,20 +160,26 @@ class ContentGenerator:
             
         self._initialized = True
         
-        if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY:
+        if not AZURE_OPENAI_ENDPOINT:
             logger.warning(
-                "Azure OpenAI not configured. Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY."
+                "Azure OpenAI not configured. Set AZURE_OPENAI_ENDPOINT."
             )
             return False
         
         try:
+            # Use Entra ID with DefaultAzureCredential for managed identity
+            token_provider = get_bearer_token_provider(
+                DefaultAzureCredential(),
+                "https://cognitiveservices.azure.com/.default"
+            )
+            
             # Use v1 endpoint for Responses API
             base_url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/v1/"
             self._client = OpenAI(
-                api_key=AZURE_OPENAI_API_KEY,
+                api_key=token_provider,
                 base_url=base_url,
             )
-            logger.info("Azure OpenAI client initialized with Responses API")
+            logger.info("Azure OpenAI client initialized with Entra ID managed identity")
             return True
         except Exception as e:
             logger.exception("Failed to initialize Azure OpenAI client: %s", e)
