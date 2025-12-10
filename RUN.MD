@@ -10,6 +10,24 @@ uvicorn main:app --reload --port 8020
 npm run dev
 ```
 
+**Cosmos DB Emulator**:
+```bash
+docker run \
+   --name cosmos-emulator \
+   --detach \
+   --publish 8081:8081 \
+   --publish 1234:1234 \
+   mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+```
+stop:
+```bash
+docker stop cosmos-emulator
+```
+remove:
+```bash
+docker rm cosmos-emulator
+``` 
+
 
 **To run with Docker**:
 ```bash
