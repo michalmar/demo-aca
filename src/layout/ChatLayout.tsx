@@ -1,9 +1,10 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { ClipboardList, GraduationCap, HelpCircle, MessageSquare, Settings, Sparkles } from 'lucide-react';
+import { ClipboardList, GraduationCap, HelpCircle, MessageSquare, Settings, Sparkles, Upload } from 'lucide-react';
 
 import { ModeToggle } from '@/components/ModeToggle';
 import AnswerInput from '../components/AnswerInput';
+import UploadTopic from '../components/UploadTopic';
 import { useQuestionnaire } from '../context/QuestionnaireContext';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,6 +20,8 @@ const questionnaireTypeIconMap: Record<QuestionnaireType, LucideIcon> = {
   flashcard: Sparkles,
 };
 
+type ViewType = 'questionnaire' | 'upload';
+
 const ChatLayout: React.FC = () => {
   const {
     questions,
@@ -33,9 +36,11 @@ const ChatLayout: React.FC = () => {
     answers,
     submitted,
     resetAnswers,
-    questionnaireType
+    questionnaireType,
+    refreshQuestionnaires
   } = useQuestionnaire();
   const [retaking, setRetaking] = React.useState(false);
+  const [currentView, setCurrentView] = React.useState<ViewType>('questionnaire');
   const currentQuestion = questions[currentIndex];
   const hasMultipleQuestionnaires = questionnaires.length > 1;
   const statusColorMap: Record<AnswerState, string> = {
@@ -77,6 +82,18 @@ const ChatLayout: React.FC = () => {
       setRetaking(false);
     }
   };
+  
+  const handleUploadSuccess = async () => {
+    // Refresh the questionnaires list after successful upload
+    if (refreshQuestionnaires) {
+      await refreshQuestionnaires();
+    }
+  };
+  
+  const handleQuestionnaireSelect = (id: string) => {
+    setQuestionnaireId(id);
+    setCurrentView('questionnaire');
+  };
   const questionnaireTypeIconMap: Record<QuestionnaireType, LucideIcon> = React.useMemo(
     () => ({
       question: ClipboardList,
@@ -107,10 +124,10 @@ const ChatLayout: React.FC = () => {
                     <button
                       key={q.id}
                       type="button"
-                      onClick={() => setQuestionnaireId(q.id)}
+                      onClick={() => handleQuestionnaireSelect(q.id)}
                       className={cn(
                         'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
-                        questionnaireId === q.id
+                        questionnaireId === q.id && currentView === 'questionnaire'
                           ? 'bg-primary/10 text-primary'
                           : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                       )}
@@ -125,6 +142,19 @@ const ChatLayout: React.FC = () => {
             <div>
               <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Menus</p>
               <div className="mt-3 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('upload')}
+                  className={cn(
+                    'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
+                    currentView === 'upload'
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  )}
+                >
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Topic</span>
+                </button>
                 <button
                   type="button"
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
@@ -181,11 +211,21 @@ const ChatLayout: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-6">
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-foreground">{title}</h2>
-              <p className="text-sm text-muted-foreground">{description}</p>
-            </div>
-            {showSummary ? (
+            {currentView === 'upload' ? (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-lg font-medium text-foreground">Upload New Topic</h2>
+                  <p className="text-sm text-muted-foreground">Add educational content to generate flashcards and quizzes</p>
+                </div>
+                <UploadTopic onSuccess={handleUploadSuccess} />
+              </>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <h2 className="text-lg font-medium text-foreground">{title}</h2>
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                </div>
+                {showSummary ? (
               <Card className="bg-card/90 backdrop-blur">
                 <CardHeader className="space-y-2">
                   <CardTitle className="text-base font-semibold">{isFlashcard ? 'Review Summary' : 'Results Summary'}</CardTitle>
@@ -277,8 +317,10 @@ const ChatLayout: React.FC = () => {
                 )}
               </>
             )}
+              </>
+            )}
           </div>
-          {!showSummary && <AnswerInput />}
+          {currentView === 'questionnaire' && !showSummary && <AnswerInput />}
         </main>
       </div>
     </div>

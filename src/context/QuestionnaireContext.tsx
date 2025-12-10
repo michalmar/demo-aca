@@ -156,6 +156,7 @@ interface ContextValue {
   setQuestionnaireId: (id: string) => void;
   resetAnswers: () => Promise<void>;
   questionnaireType: QuestionnaireType;
+  refreshQuestionnaires: () => Promise<void>;
 }
 
 const Ctx = createContext<ContextValue | undefined>(undefined);
@@ -361,6 +362,30 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
       console.warn('[QuestionnaireProvider] failed to clear remote answers', err);
     }
   };
+
+  const refreshQuestionnaires = async () => {
+    console.debug('[QuestionnaireProvider] refreshing questionnaires list');
+    try {
+      const remoteList = await fetchQuestionnaires();
+      if (remoteList.length > 0) {
+        const normalized = remoteList.map(remote => {
+          const type = resolveQuestionnaireType({ type: remote.type, questionnaireType: remote.questionnaireType, questions: remote.questions });
+          return {
+            id: remote.id,
+            title: remote.title,
+            description: remote.description,
+            type,
+            questions: remote.questions,
+          };
+        });
+        setQuestionnaires(normalized);
+        console.debug('[QuestionnaireProvider] questionnaires refreshed, count:', normalized.length);
+      }
+    } catch (e) {
+      console.error('[QuestionnaireProvider] failed to refresh questionnaires', e);
+    }
+  };
+
   const completed = questions.every(q => {
     const record = answers[q.id];
     if (questionnaireType === 'flashcard') {
@@ -390,7 +415,8 @@ export const QuestionnaireProvider: React.FC<{ children: React.ReactNode }> = ({
         questionnaires,
         setQuestionnaireId,
         resetAnswers,
-        questionnaireType
+        questionnaireType,
+        refreshQuestionnaires
       }}
     >
       {children}

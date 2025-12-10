@@ -21,6 +21,8 @@ from models import (
     QuestionnaireCreate,
     QuestionnaireUpdate,
     StoredAnswers,
+    TopicUploadRequest,
+    TopicUploadResponse,
 )
 from questionnaire_store import (
     create_questionnaire,
@@ -32,6 +34,7 @@ from questionnaire_store import (
     update_questionnaire,
 )
 from storage import save_answers, get_answers, init_storage
+from content_generator import get_content_generator
 
 
 def _answers_or_empty(user_id: str, questionnaire_id: str) -> StoredAnswers:
@@ -126,6 +129,86 @@ def post_answers_for_questionnaire(questionnaire_id: str, payload: AnswersPayloa
 @app.get("/api/questionnaires/{questionnaire_id}/answers/{user_id}", response_model=StoredAnswers)
 def fetch_answers_for_questionnaire(questionnaire_id: str, user_id: str):
     return _answers_or_empty(user_id, questionnaire_id)
+
+
+@app.post("/api/upload", response_model=TopicUploadResponse)
+def upload_topic(payload: TopicUploadRequest):
+    """
+    Upload a new topic to generate flashcards and test questions.
+    
+    This endpoint uses Azure OpenAI to generate educational content
+    and stores it in CosmosDB as new questionnaire documents.
+    """
+    generator = get_content_generator()
+    
+    if not generator.is_available():
+        raise HTTPException(
+            status_code=503,
+            detail="Content generation service is not available. Check Azure OpenAI configuration."
+        )
+    
+    flashcard_id = None
+    test_id = None
+    errors = []
+    
+    # Generate flashcards
+    try:
+        flashcard_data = generator.generate_flashcards(payload.topicName, payload.topicText)
+        flashcard_questionnaire = QuestionnaireCreate(**flashcard_data)
+        created_flashcard = create_questionnaire(flashcard_questionnaire)
+        flashcard_id = created_flashcard.id
+    except ValueError as e:
+        # Duplicate ID - try with a unique suffix
+        try:
+            import time
+            flashcard_data["id"] = f"{flashcard_data.get('id', 'flashcard')}-{int(time.time())}"
+            flashcard_questionnaire = QuestionnaireCreate(**flashcard_data)
+            created_flashcard = create_questionnaire(flashcard_questionnaire)
+            flashcard_id = created_flashcard.id
+        except Exception as inner_e:
+            errors.append(f"Flashcard creation failed: {inner_e}")
+    except Exception as e:
+        errors.append(f"Flashcard generation failed: {e}")
+    
+    # Generate test
+    try:
+        test_data = generator.generate_test(payload.topicName, payload.topicText)
+        test_questionnaire = QuestionnaireCreate(**test_data)
+        created_test = create_questionnaire(test_questionnaire)
+        test_id = created_test.id
+    except ValueError as e:
+        # Duplicate ID - try with a unique suffix
+        try:
+            import time
+            test_data["id"] = f"{test_data.get('id', 'test')}-{int(time.time())}"
+            test_questionnaire = QuestionnaireCreate(**test_data)
+            created_test = create_questionnaire(test_questionnaire)
+            test_id = created_test.id
+        except Exception as inner_e:
+            errors.append(f"Test creation failed: {inner_e}")
+    except Exception as e:
+        errors.append(f"Test generation failed: {e}")
+    
+    if not flashcard_id and not test_id:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate content: {'; '.join(errors)}"
+        )
+    
+    message_parts = []
+    if flashcard_id:
+        message_parts.append(f"Flashcards created (ID: {flashcard_id})")
+    if test_id:
+        message_parts.append(f"Test created (ID: {test_id})")
+    if errors:
+        message_parts.append(f"Warnings: {'; '.join(errors)}")
+    
+    return TopicUploadResponse(
+        success=True,
+        message="; ".join(message_parts),
+        flashcardId=flashcard_id,
+        testId=test_id
+    )
 
 
 @app.get("/check")

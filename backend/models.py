@@ -56,3 +56,17 @@ class QuestionnaireUpdate(BaseModel):
     description: Optional[str] = None
     questions: Optional[List[Question]] = None
     type: Optional[QuestionnaireType] = Field(default=None, alias="questionnaireType")
+
+
+class TopicUploadRequest(BaseModel):
+    """Request model for uploading a new topic to generate content."""
+    topicName: str
+    topicText: str
+
+
+class TopicUploadResponse(BaseModel):
+    """Response model for topic upload with generated content."""
+    success: bool
+    message: str
+    flashcardId: Optional[str] = None
+    testId: Optional[str] = None

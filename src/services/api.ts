@@ -184,3 +184,35 @@ export async function fetchStoredAnswers(questionnaireId: string) {
     return null;
   }
 }
+
+export interface TopicUploadPayload {
+  topicName: string;
+  topicText: string;
+}
+
+export interface TopicUploadResponse {
+  success: boolean;
+  message: string;
+  flashcardId?: string;
+  testId?: string;
+}
+
+export async function uploadTopic(payload: TopicUploadPayload): Promise<TopicUploadResponse> {
+  const endpoint = `${API_BASE}/api/upload`;
+  console.debug('[ApiService] uploading topic', payload.topicName);
+  
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(errorData.detail || `Request failed with status ${res.status}`);
+  }
+  
+  const data = await res.json();
+  console.debug('[ApiService] upload topic response', data);
+  return data as TopicUploadResponse;
+}
