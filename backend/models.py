@@ -58,10 +58,19 @@ class QuestionnaireUpdate(BaseModel):
     type: Optional[QuestionnaireType] = Field(default=None, alias="questionnaireType")
 
 
+class UploadedImage(BaseModel):
+    """An optional screenshot-like image provided with topic upload."""
+
+    filename: Optional[str] = None
+    # Expected to be a data URL: data:image/<type>;base64,<...>
+    dataUrl: str
+
+
 class TopicUploadRequest(BaseModel):
     """Request model for uploading a new topic to generate content."""
     topicName: str
     topicText: str
+    images: Optional[List[UploadedImage]] = None
 
 
 class TopicUploadResponse(BaseModel):

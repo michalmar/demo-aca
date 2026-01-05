@@ -188,6 +188,7 @@ export async function fetchStoredAnswers(questionnaireId: string) {
 export interface TopicUploadPayload {
   topicName: string;
   topicText: string;
+  images?: Array<{ filename?: string; dataUrl: string }>;
 }
 
 export interface TopicUploadResponse {

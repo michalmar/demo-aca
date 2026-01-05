@@ -188,8 +188,26 @@ class ContentGenerator:
     def is_available(self) -> bool:
         """Check if the generator is available."""
         return self._ensure_client()
+
+    def _build_user_content(self, topic_name: str, topic_text: str, images: Optional[list[dict]] = None):
+        """Build a Responses API user message content payload, including optional images."""
+
+        content: list[dict] = [
+            {
+                "type": "input_text",
+                "text": f"Topic: {topic_name}\n\nSource material:\n{topic_text}",
+            }
+        ]
+
+        if images:
+            for image in images:
+                data_url = image.get("dataUrl")
+                if isinstance(data_url, str) and data_url.strip():
+                    content.append({"type": "input_image", "image_url": data_url})
+
+        return content
     
-    def generate_flashcards(self, topic_name: str, topic_text: str) -> dict:
+    def generate_flashcards(self, topic_name: str, topic_text: str, images: Optional[list[dict]] = None) -> dict:
         """
         Generate flashcards for a given topic.
         
@@ -208,10 +226,7 @@ class ContentGenerator:
         # Build the prompt with topic context
         prompt = FLASHCARD_PROMPT.replace("<topic>", topic_name)
         
-        user_input = f"""
-        Topic: 
-        {topic_text}
-        """
+        user_content = self._build_user_content(topic_name, topic_text, images)
 
         logger.info("Generating flashcards for topic: %s", topic_name)
         
@@ -220,7 +235,7 @@ class ContentGenerator:
                 model=AZURE_OPENAI_MODEL,
                 input=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": user_input}
+                    {"role": "user", "content": user_content}
                 ]
             )
             
@@ -251,7 +266,7 @@ class ContentGenerator:
             logger.exception("Failed to generate flashcards: %s", e)
             raise
     
-    def generate_test(self, topic_name: str, topic_text: str) -> dict:
+    def generate_test(self, topic_name: str, topic_text: str, images: Optional[list[dict]] = None) -> dict:
         """
         Generate a test/quiz for a given topic.
         
@@ -270,10 +285,7 @@ class ContentGenerator:
         # Build the prompt with topic context
         prompt = TEST_PROMPT.replace("<topic>", topic_name)
         
-        user_input = f"""
-        Topic: 
-        {topic_text}
-        """
+        user_content = self._build_user_content(topic_name, topic_text, images)
 
         logger.info("Generating test for topic: %s", topic_name)
         
@@ -282,7 +294,7 @@ class ContentGenerator:
                 model=AZURE_OPENAI_MODEL,
                 input=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": user_input}
+                    {"role": "user", "content": user_content}
                 ]
             )
             

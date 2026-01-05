@@ -17,6 +17,11 @@ interface UploadResponse {
   testId?: string;
 }
 
+interface UploadedImage {
+  filename: string;
+  dataUrl: string;
+}
+
 interface UploadTopicProps {
   onSuccess?: () => void;
 }
@@ -26,9 +31,50 @@ type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
   const [topicName, setTopicName] = useState('');
   const [topicText, setTopicText] = useState('');
+  const [images, setImages] = useState<UploadedImage[]>([]);
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<UploadResponse | null>(null);
+
+  const handleFilesSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []).filter(file => file.type.startsWith('image/'));
+    if (files.length === 0) {
+      setImages([]);
+      return;
+    }
+
+    setStatus('uploading');
+    setMessage('Processing images…');
+    setResult(null);
+
+    try {
+      const encoded = await Promise.all(
+        files.map(
+          file =>
+            new Promise<UploadedImage>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const dataUrl = typeof reader.result === 'string' ? reader.result : '';
+                if (!dataUrl) {
+                  reject(new Error(`Failed to read ${file.name}`));
+                  return;
+                }
+                resolve({ filename: file.name, dataUrl });
+              };
+              reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+              reader.readAsDataURL(file);
+            })
+        )
+      );
+      setImages(encoded);
+      setStatus('idle');
+      setMessage('');
+    } catch (err) {
+      setImages([]);
+      setStatus('error');
+      setMessage(err instanceof Error ? err.message : 'Failed to process images');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +98,7 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
         body: JSON.stringify({
           topicName: topicName.trim(),
           topicText: topicText.trim(),
+          images: images.length ? images : undefined,
         }),
       });
 
@@ -68,6 +115,7 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
       // Clear form on success
       setTopicName('');
       setTopicText('');
+      setImages([]);
       
       // Notify parent component
       if (onSuccess) {
@@ -127,6 +175,23 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
             />
             <p className="text-xs text-muted-foreground">
               The more detailed the content, the better the generated questions will be.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="topicImages" className="text-sm font-medium text-foreground">
+              Optional screenshots (images)
+            </label>
+            <Input
+              id="topicImages"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFilesSelected}
+              disabled={status === 'uploading'}
+            />
+            <p className="text-xs text-muted-foreground">
+              {images.length ? `${images.length} image(s) selected.` : 'Attach screenshots if the topic includes diagrams or photos.'}
             </p>
           </div>
 
