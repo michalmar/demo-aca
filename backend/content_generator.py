@@ -200,10 +200,14 @@ class ContentGenerator:
         ]
 
         if images:
+            image_index = 1
             for image in images:
                 data_url = image.get("dataUrl")
                 if isinstance(data_url, str) and data_url.strip():
-                    content.append({"type": "input_image", "image_url": data_url})
+                    # Add a text label before each image
+                    content.append({"type": "input_text", "text": f"Image {image_index}:"})
+                    content.append({"type": "input_image", "image_url": data_url, "detail": "high"})
+                    image_index += 1
 
         return content
     
