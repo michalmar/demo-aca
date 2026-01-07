@@ -2,6 +2,7 @@
 
 import {
   HelpCircle,
+  List,
   MessageSquare,
   Settings,
   Upload,
@@ -16,7 +17,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export type MenuView = "questionnaire" | "upload" | "responses" | "settings" | "help"
+export type MenuView = "questionnaire" | "upload" | "responses" | "questionnaires-list" | "settings" | "help"
 
 interface MenuItem {
   title: string
@@ -29,6 +30,11 @@ const menuItems: MenuItem[] = [
     title: "Upload Topic",
     view: "upload",
     icon: Upload,
+  },
+  {
+    title: "Questionnaires",
+    view: "questionnaires-list",
+    icon: List,
   },
   {
     title: "Responses",

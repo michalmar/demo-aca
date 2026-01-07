@@ -141,6 +141,18 @@ export async function fetchQuestionnaire(questionnaireId?: string): Promise<Ques
   }
 }
 
+export async function deleteQuestionnaire(questionnaireId: string): Promise<void> {
+  const endpoint = `${API_BASE}/api/questionnaires/${encodeURIComponent(questionnaireId)}`;
+  console.debug('[ApiService] deleting questionnaire', questionnaireId);
+  
+  const res = await fetch(endpoint, { method: 'DELETE' });
+  if (!res.ok && res.status !== 204) {
+    const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(errorData.detail || `Request failed with status ${res.status}`);
+  }
+  console.debug('[ApiService] questionnaire deleted successfully');
+}
+
 export async function postAnswers(questionnaireId: string, answers: AnswerMap) {
   const userId = getUserId();
   try {

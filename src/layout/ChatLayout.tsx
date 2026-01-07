@@ -23,6 +23,7 @@ import {
   SettingsPage,
   HelpPage,
   QuestionnairePage,
+  QuestionnairesListPage,
 } from '@/pages';
 import { fetchConfig } from '@/services/api';
 
@@ -112,6 +113,8 @@ const ChatLayout: React.FC = () => {
         return 'Upload Topic';
       case 'responses':
         return 'Responses';
+      case 'questionnaires-list':
+        return 'Questionnaires';
       case 'settings':
         return 'Settings';
       case 'help':
@@ -127,6 +130,8 @@ const ChatLayout: React.FC = () => {
         return <UploadPage onSuccess={handleUploadSuccess} />;
       case 'responses':
         return <ResponsesPage />;
+      case 'questionnaires-list':
+        return <QuestionnairesListPage />;
       case 'settings':
         return <SettingsPage />;
       case 'help':
