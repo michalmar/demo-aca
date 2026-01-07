@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Upload, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { Textarea } from './ui/TextArea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/Card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 const API_BASE =
   import.meta.env.VITE_BACKEND_URL ||

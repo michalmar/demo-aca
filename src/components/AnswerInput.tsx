@@ -1,8 +1,8 @@
 import React from 'react';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/TextArea';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuestionnaire } from '../context/QuestionnaireContext';
 import { cn } from '@/lib/utils';
 

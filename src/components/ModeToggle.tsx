@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
-import { Button } from '@/components/ui/Button';
-import { Switch } from '@/components/ui/Switch';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/components/ThemeProvider';
 
 export function ModeToggle() {
