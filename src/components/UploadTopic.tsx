@@ -4,6 +4,15 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+
+type ReasoningEffort = 'none' | 'low' | 'medium' | 'high';
 
 const API_BASE =
   import.meta.env.VITE_BACKEND_URL ||
@@ -32,6 +41,7 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
   const [topicName, setTopicName] = useState('');
   const [topicText, setTopicText] = useState('');
   const [images, setImages] = useState<UploadedImage[]>([]);
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('none');
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<UploadResponse | null>(null);
@@ -99,6 +109,7 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
           topicName: topicName.trim(),
           topicText: topicText.trim(),
           images: images.length ? images : undefined,
+          reasoningEffort,
         }),
       });
 
@@ -116,6 +127,7 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
       setTopicName('');
       setTopicText('');
       setImages([]);
+      setReasoningEffort('none');
       
       // Notify parent component
       if (onSuccess) {
@@ -192,6 +204,30 @@ const UploadTopic: React.FC<UploadTopicProps> = ({ onSuccess }) => {
             />
             <p className="text-xs text-muted-foreground">
               {images.length ? `${images.length} image(s) selected.` : 'Attach screenshots if the topic includes diagrams or photos.'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="reasoningEffort" className="text-sm font-medium text-foreground">
+              AI Reasoning Effort
+            </label>
+            <Select
+              value={reasoningEffort}
+              onValueChange={(value: ReasoningEffort) => setReasoningEffort(value)}
+              disabled={status === 'uploading'}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select reasoning effort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (fastest, default)</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High (most thorough)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Higher reasoning effort may produce better results but takes longer.
             </p>
           </div>
 

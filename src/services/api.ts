@@ -185,10 +185,13 @@ export async function fetchStoredAnswers(questionnaireId: string) {
   }
 }
 
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high';
+
 export interface TopicUploadPayload {
   topicName: string;
   topicText: string;
   images?: Array<{ filename?: string; dataUrl: string }>;
+  reasoningEffort?: ReasoningEffort;
 }
 
 export interface TopicUploadResponse {

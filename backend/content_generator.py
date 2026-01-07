@@ -211,13 +211,21 @@ class ContentGenerator:
 
         return content
     
-    def generate_flashcards(self, topic_name: str, topic_text: str, images: Optional[list[dict]] = None) -> dict:
+    def generate_flashcards(
+        self,
+        topic_name: str,
+        topic_text: str,
+        images: Optional[list[dict]] = None,
+        reasoning_effort: str = "none",
+    ) -> dict:
         """
         Generate flashcards for a given topic.
         
         Args:
             topic_name: The name/title of the topic
             topic_text: The source text about the topic
+            images: Optional list of image data
+            reasoning_effort: Reasoning effort level (none, low, medium, high)
             
         Returns:
             A dictionary containing the flashcard questionnaire
@@ -232,7 +240,7 @@ class ContentGenerator:
         
         user_content = self._build_user_content(topic_name, topic_text, images)
 
-        logger.info("Generating flashcards for topic: %s", topic_name)
+        logger.info("Generating flashcards for topic: %s (reasoning: %s)", topic_name, reasoning_effort)
         
         try:
             response = self._client.responses.create(
@@ -240,7 +248,8 @@ class ContentGenerator:
                 input=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": user_content}
-                ]
+                ],
+                reasoning={"effort": reasoning_effort}
             )
             
             # Extract text from response
@@ -270,13 +279,21 @@ class ContentGenerator:
             logger.exception("Failed to generate flashcards: %s", e)
             raise
     
-    def generate_test(self, topic_name: str, topic_text: str, images: Optional[list[dict]] = None) -> dict:
+    def generate_test(
+        self,
+        topic_name: str,
+        topic_text: str,
+        images: Optional[list[dict]] = None,
+        reasoning_effort: str = "none",
+    ) -> dict:
         """
         Generate a test/quiz for a given topic.
         
         Args:
             topic_name: The name/title of the topic
             topic_text: The source text about the topic
+            images: Optional list of image data
+            reasoning_effort: Reasoning effort level (none, low, medium, high)
             
         Returns:
             A dictionary containing the test questionnaire
@@ -291,7 +308,7 @@ class ContentGenerator:
         
         user_content = self._build_user_content(topic_name, topic_text, images)
 
-        logger.info("Generating test for topic: %s", topic_name)
+        logger.info("Generating test for topic: %s (reasoning: %s)", topic_name, reasoning_effort)
         
         try:
             response = self._client.responses.create(
@@ -299,7 +316,8 @@ class ContentGenerator:
                 input=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": user_content}
-                ]
+                ],
+                reasoning={"effort": reasoning_effort}
             )
             
             # Extract text from response

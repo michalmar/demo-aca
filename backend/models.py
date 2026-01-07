@@ -66,11 +66,15 @@ class UploadedImage(BaseModel):
     dataUrl: str
 
 
+ReasoningEffort = Literal["none", "low", "medium", "high"]
+
+
 class TopicUploadRequest(BaseModel):
     """Request model for uploading a new topic to generate content."""
     topicName: str
     topicText: str
     images: Optional[List[UploadedImage]] = None
+    reasoningEffort: ReasoningEffort = "none"
 
 
 class TopicUploadResponse(BaseModel):

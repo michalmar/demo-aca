@@ -181,10 +181,13 @@ def upload_topic(payload: TopicUploadRequest):
     errors = []
     
     images = [image.model_dump() for image in (payload.images or [])]
+    reasoning_effort = payload.reasoningEffort
 
     # Generate flashcards
     try:
-        flashcard_data = generator.generate_flashcards(payload.topicName, payload.topicText, images=images)
+        flashcard_data = generator.generate_flashcards(
+            payload.topicName, payload.topicText, images=images, reasoning_effort=reasoning_effort
+        )
         flashcard_questionnaire = QuestionnaireCreate(**flashcard_data)
         created_flashcard = create_questionnaire(flashcard_questionnaire)
         flashcard_id = created_flashcard.id
@@ -203,7 +206,9 @@ def upload_topic(payload: TopicUploadRequest):
     
     # Generate test
     try:
-        test_data = generator.generate_test(payload.topicName, payload.topicText, images=images)
+        test_data = generator.generate_test(
+            payload.topicName, payload.topicText, images=images, reasoning_effort=reasoning_effort
+        )
         test_questionnaire = QuestionnaireCreate(**test_data)
         created_test = create_questionnaire(test_questionnaire)
         test_id = created_test.id
