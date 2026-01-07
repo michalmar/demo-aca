@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 try:
     from backend import cosmos
@@ -61,3 +61,42 @@ def get_answers(user_id: str, questionnaire_id: str) -> Optional[StoredAnswers]:
         )
     key = _answer_key(user_id, questionnaire_id)
     return _answers_store.get(key)
+
+
+def list_all_answers(limit: int = 100, offset: int = 0) -> Tuple[List[StoredAnswers], int]:
+    """List all answers with pagination support.
+    
+    Returns a tuple of (items, total_count).
+    """
+    docs, total = cosmos.list_answers(limit=limit, offset=offset)
+    if docs is not None:
+        return [
+            StoredAnswers(
+                userId=doc.get("userId", ""),
+                questionnaireId=doc.get("questionnaireId", ""),
+                answers=doc.get("answers", {}),
+            )
+            for doc in docs
+        ], total
+    
+    # Fallback to in-memory store
+    all_items = list(_answers_store.values())
+    total = len(all_items)
+    return all_items[offset:offset + limit], total
+
+
+def delete_stored_answers(user_id: str, questionnaire_id: str) -> bool:
+    """Delete an answers document.
+    
+    Returns True if deleted successfully, False otherwise.
+    """
+    deleted = cosmos.delete_answers(user_id, questionnaire_id)
+    if deleted:
+        return True
+    
+    # Try in-memory fallback
+    key = _answer_key(user_id, questionnaire_id)
+    if key in _answers_store:
+        del _answers_store[key]
+        return True
+    return False

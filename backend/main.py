@@ -23,6 +23,7 @@ from models import (
     StoredAnswers,
     TopicUploadRequest,
     TopicUploadResponse,
+    PaginatedAnswersResponse,
 )
 from questionnaire_store import (
     create_questionnaire,
@@ -33,7 +34,7 @@ from questionnaire_store import (
     seed_if_empty,
     update_questionnaire,
 )
-from storage import save_answers, get_answers, init_storage
+from storage import save_answers, get_answers, init_storage, list_all_answers, delete_stored_answers
 from content_generator import get_content_generator
 
 
@@ -129,6 +130,34 @@ def post_answers_for_questionnaire(questionnaire_id: str, payload: AnswersPayloa
 @app.get("/api/questionnaires/{questionnaire_id}/answers/{user_id}", response_model=StoredAnswers)
 def fetch_answers_for_questionnaire(questionnaire_id: str, user_id: str):
     return _answers_or_empty(user_id, questionnaire_id)
+
+
+@app.get("/api/responses", response_model=PaginatedAnswersResponse)
+def list_responses(
+    page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
+    pageSize: int = Query(default=10, ge=1, le=100, description="Number of items per page"),
+):
+    """List all stored answers with pagination."""
+    import math
+    offset = (page - 1) * pageSize
+    items, total = list_all_answers(limit=pageSize, offset=offset)
+    total_pages = math.ceil(total / pageSize) if total > 0 else 1
+    return PaginatedAnswersResponse(
+        items=items,
+        total=total,
+        page=page,
+        pageSize=pageSize,
+        totalPages=total_pages,
+    )
+
+
+@app.delete("/api/responses/{questionnaire_id}/{user_id}", status_code=204)
+def delete_response(questionnaire_id: str, user_id: str):
+    """Delete a specific response by questionnaire ID and user ID."""
+    deleted = delete_stored_answers(user_id, questionnaire_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Response not found")
+    return Response(status_code=204)
 
 
 @app.post("/api/upload", response_model=TopicUploadResponse)

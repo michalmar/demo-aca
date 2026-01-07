@@ -219,3 +219,39 @@ def delete_questionnaire(questionnaire_id: str) -> bool:
         return True
     except exceptions.CosmosResourceNotFoundError:
         return False
+
+
+def list_answers(limit: int = 100, offset: int = 0) -> Tuple[Optional[List[Dict]], int]:
+    """List all answers with pagination support.
+    
+    Returns a tuple of (items, total_count). If Cosmos is unavailable, returns (None, 0).
+    """
+    if not cosmos_available():
+        logger.debug("Cosmos answers container not available; cannot list answers")
+        return None, 0
+    
+    # Get total count
+    count_query = "SELECT VALUE COUNT(1) FROM c"
+    count_result = list(_answers_container.query_items(query=count_query, enable_cross_partition_query=True))
+    total_count = count_result[0] if count_result else 0
+    
+    # Get paginated items
+    query = f"SELECT * FROM c ORDER BY c._ts DESC OFFSET {offset} LIMIT {limit}"
+    items = _answers_container.query_items(query=query, enable_cross_partition_query=True)
+    return [_prune_system_fields(item) for item in items], total_count
+
+
+def delete_answers(user_id: str, questionnaire_id: str) -> bool:
+    """Delete an answers document.
+    
+    Returns True if deleted successfully, False otherwise.
+    """
+    if not cosmos_available():
+        logger.debug("Cosmos answers container not available; cannot delete answers")
+        return False
+    try:
+        document_id = f"{questionnaire_id}:{user_id}"
+        _answers_container.delete_item(item=document_id, partition_key=user_id)
+        return True
+    except exceptions.CosmosResourceNotFoundError:
+        return False

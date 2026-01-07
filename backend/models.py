@@ -79,3 +79,12 @@ class TopicUploadResponse(BaseModel):
     message: str
     flashcardId: Optional[str] = None
     testId: Optional[str] = None
+
+
+class PaginatedAnswersResponse(BaseModel):
+    """Response model for paginated list of answers."""
+    items: List[StoredAnswers]
+    total: int
+    page: int
+    pageSize: int
+    totalPages: int

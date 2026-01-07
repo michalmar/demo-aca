@@ -217,3 +217,52 @@ export async function uploadTopic(payload: TopicUploadPayload): Promise<TopicUpl
   console.debug('[ApiService] upload topic response', data);
   return data as TopicUploadResponse;
 }
+
+// Types for stored responses
+export interface AnswerDetailResponse {
+  value: string;
+  correct?: 'yes' | 'no';
+  rightAnswer?: string | string[];
+  revealed?: boolean;
+}
+
+export interface StoredAnswerResponse {
+  userId: string;
+  questionnaireId: string;
+  answers: Record<string, AnswerDetailResponse>;
+}
+
+export interface PaginatedResponsesResult {
+  items: StoredAnswerResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function fetchResponses(page: number = 1, pageSize: number = 10): Promise<PaginatedResponsesResult> {
+  const endpoint = `${API_BASE}/api/responses?page=${page}&pageSize=${pageSize}`;
+  console.debug('[ApiService] fetching responses page', page);
+  
+  const res = await fetch(endpoint);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(errorData.detail || `Request failed with status ${res.status}`);
+  }
+  
+  const data = await res.json();
+  console.debug('[ApiService] responses response', data);
+  return data as PaginatedResponsesResult;
+}
+
+export async function deleteResponse(questionnaireId: string, userId: string): Promise<void> {
+  const endpoint = `${API_BASE}/api/responses/${encodeURIComponent(questionnaireId)}/${encodeURIComponent(userId)}`;
+  console.debug('[ApiService] deleting response', questionnaireId, userId);
+  
+  const res = await fetch(endpoint, { method: 'DELETE' });
+  if (!res.ok && res.status !== 204) {
+    const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(errorData.detail || `Request failed with status ${res.status}`);
+  }
+  console.debug('[ApiService] response deleted successfully');
+}
