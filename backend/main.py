@@ -285,4 +285,12 @@ def check_cosmos_connection():
 def health():
     return {"status": "ok"}
 
+
+@app.get("/api/config")
+def get_config():
+    """Return public configuration information including the OpenAI model in use."""
+    return {
+        "openaiModel": os.getenv("AZURE_OPENAI_MODEL", "unknown"),
+    }
+
 # Run with: uvicorn main:app --reload

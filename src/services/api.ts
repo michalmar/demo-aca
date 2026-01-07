@@ -266,3 +266,23 @@ export async function deleteResponse(questionnaireId: string, userId: string): P
   }
   console.debug('[ApiService] response deleted successfully');
 }
+
+// Config types
+export interface AppConfig {
+  openaiModel: string;
+}
+
+export async function fetchConfig(): Promise<AppConfig | null> {
+  const endpoint = `${API_BASE}/api/config`;
+  try {
+    console.debug('[ApiService] fetching config from', endpoint);
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error(`Bad response (${res.status})`);
+    const data = await res.json();
+    console.debug('[ApiService] config response', data);
+    return data as AppConfig;
+  } catch (err) {
+    console.warn('[ApiService] failed to fetch config', err);
+    return null;
+  }
+}

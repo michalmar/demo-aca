@@ -16,6 +16,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   UploadPage,
   ResponsesPage,
@@ -23,6 +24,7 @@ import {
   HelpPage,
   QuestionnairePage,
 } from '@/pages';
+import { fetchConfig } from '@/services/api';
 
 type AnswerState = 'pending' | 'correct' | 'incorrect';
 
@@ -46,6 +48,15 @@ const ChatLayout: React.FC = () => {
 
   const [retaking, setRetaking] = React.useState(false);
   const [currentView, setCurrentView] = React.useState<MenuView>('questionnaire');
+  const [openaiModel, setOpenaiModel] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchConfig().then((config) => {
+      if (config?.openaiModel) {
+        setOpenaiModel(config.openaiModel);
+      }
+    });
+  }, []);
 
   const answeredStates: AnswerState[] = questions.map((question) => {
     const record = answers[question.id];
@@ -168,6 +179,13 @@ const ChatLayout: React.FC = () => {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            {openaiModel && (
+              <Badge variant="secondary" className="text-xs">
+                Model: {openaiModel}
+              </Badge>
+            )}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">
